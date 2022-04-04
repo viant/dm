@@ -1,4 +1,4 @@
-package vhtml
+package dm
 
 import "bytes"
 
@@ -25,57 +25,35 @@ func (d *DOM) Session(options ...Option) *Session {
 }
 
 func (s *Session) SetAttr(tag, attribute, oldValue, newValue []byte, fullMatch bool) {
-	//currOffset := 0
-	//currEnd := 0
-	//
-	//for i, attr := range s.dom.attributes {
-	//	s.offsets[i] += currOffset
-	//	if !bytes.Equal(attr.Key, attribute) || !bytes.Equal(attr.Tag, tag) {
-	//		continue
-	//	}
-	//
-	//	currEnd = 0
-	//
-	//	if i != 0 && s.offsets[i] != s.offsets[i-1] {
-	//		currEnd = attr.ValueEnd() + s.offsets[i] - s.offsets[i-1]
-	//		if !s.match(fullMatch, s.buffer.buffer[attr.ValueStart()+s.offsets[i-1]:currEnd], oldValue) {
-	//			continue
-	//		}
-	//		currEnd = attr.ValueEnd() - currEnd
-	//	} else {
-	//		if !s.match(fullMatch, s.buffer.buffer[attr.ValueStart()+s.offsets[i]:attr.ValueEnd()+s.offsets[i]], oldValue) {
-	//			continue
-	//		}
-	//	}
-	//
-	//	currOffset += s.buffer.insertBytes(attr.Boundaries[1], currOffset+s.offsets[i], currEnd, newValue)
-	//	s.offsets[i] += currOffset
-	//}
 	currOffset := 0
 	currEnd := 0
 
 	for i, attr := range s.dom.attributes {
 		s.offsets[i] += currOffset
-		a := s.buffer.buffer[attr.KeyStart()+s.offsets[i] : attr.KeyEnd()+s.offsets[i]]
-		if !bytes.Equal(a, attribute) || !bytes.Equal(attr.Tag, tag) {
-			continue
+		if i == 0 {
+			if !bytes.Equal(s.buffer.slice(attr.boundaries[0], 0, 0), attribute) || !bytes.Equal(attr.tag, tag) {
+				continue
+			}
+		} else {
+			if !bytes.Equal(s.buffer.slice(attr.boundaries[0], s.offsets[i-1], s.offsets[i-1]), attribute) || !bytes.Equal(attr.tag, tag) {
+				continue
+			}
 		}
 
 		currEnd = 0
-
 		if i != 0 && s.offsets[i] != s.offsets[i-1] {
-			currEnd = attr.ValueEnd() + s.offsets[i] - s.offsets[i-1]
-			if !s.match(fullMatch, s.buffer.buffer[attr.ValueStart()+s.offsets[i-1]:currEnd], oldValue) {
+			currEnd = attr.valueEnd() + s.offsets[i] - s.offsets[i-1]
+			if !s.match(fullMatch, s.buffer.buffer[attr.valueStart()+s.offsets[i-1]:currEnd], oldValue) {
 				continue
 			}
-			currEnd = attr.ValueEnd() - currEnd
+			currEnd = attr.valueEnd() - currEnd
 		} else {
-			if !s.match(fullMatch, s.buffer.buffer[attr.ValueStart()+s.offsets[i]:attr.ValueEnd()+s.offsets[i]], oldValue) {
+			if !s.match(fullMatch, s.buffer.buffer[attr.valueStart()+s.offsets[i]:attr.valueEnd()+s.offsets[i]], oldValue) {
 				continue
 			}
 		}
 
-		currOffset += s.buffer.insertBytes(attr.Boundaries[1], currOffset+s.offsets[i], currEnd, newValue)
+		currOffset += s.buffer.insertBytes(attr.boundaries[1], currOffset+s.offsets[i], currEnd, newValue)
 		s.offsets[i] += currOffset
 	}
 }
@@ -101,11 +79,11 @@ func (s *Session) Attribute(tag, attribute []byte) ([]byte, bool) {
 }
 
 func (s *Session) checkByIndex(index, startOffset, endOffset int, attribute []byte, tag []byte) ([]byte, bool) {
-	if !bytes.Equal(s.buffer.buffer[s.dom.attributes[index].KeyStart()+startOffset:s.dom.attributes[index].KeyEnd()+startOffset], attribute) || !bytes.Equal(s.dom.attributes[index].Tag, tag) {
+	if !bytes.Equal(s.buffer.slice(s.dom.attributes[index].boundaries[0], startOffset, startOffset), attribute) || !bytes.Equal(s.dom.attributes[index].tag, tag) {
 		return nil, false
 	}
 
-	return s.buffer.buffer[s.dom.attributes[index].ValueStart()+startOffset : s.dom.attributes[index].ValueEnd()+endOffset], true
+	return s.buffer.buffer[s.dom.attributes[index].valueStart()+startOffset : s.dom.attributes[index].valueEnd()+endOffset], true
 }
 
 func (s *Session) match(fullMatch bool, value []byte, oldValue []byte) bool {

@@ -1,4 +1,4 @@
-package vhtml
+package dm
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 )
 
 type DOM struct {
-	attributes        Attributes
+	attributes        attrs
 	template          []byte
 	initialBufferSize int
 }
@@ -21,9 +21,17 @@ func (d *DOM) apply(options []Option) {
 	}
 }
 
-func NewVDom(template []byte, attributes []string, options ...Option) (*DOM, error) {
+func NewDOM(template []byte, attributes []string, options ...Option) (*DOM, error) {
+	var attrAsMap map[string]bool
+	if len(attributes) > 0 {
+		attrAsMap = map[string]bool{}
+		for _, attribute := range attributes {
+			attrAsMap[attribute] = true
+		}
+	}
+
 	node := html.NewTokenizer(bytes.NewReader(template))
-	nodeBuilder := NewBuilder()
+	nodeBuilder := newBuilder()
 outer:
 	for {
 		next := node.Next()
@@ -41,30 +49,38 @@ outer:
 			break outer
 
 		case html.StartTagToken, html.SelfClosingTagToken:
-			if err := buildAttributes(node, nodeBuilder); err != nil {
-				return nil, err
+			if attrAsMap == nil {
+				buildAllAttributes(node, nodeBuilder)
+			} else {
+				buildFilteredAttributes(template, node, nodeBuilder, attrAsMap)
 			}
 		}
 
 	}
 
-	nodes := nodeBuilder.Attributes()
-
 	d := &DOM{
-		attributes: nodes,
+		attributes: nodeBuilder.result(),
 		template:   template,
 	}
 	d.apply(options)
 	return d, nil
 }
 
-func buildAttributes(z *html.Tokenizer, builder *AttributesBuilder) error {
+func buildAllAttributes(z *html.Tokenizer, builder *attributesBuilder) {
 	tagName, _ := z.TagName()
-	attributes := AttributesSpan(z)
-
+	attributes := attributesSpan(z)
 	for _, attribute := range attributes {
-		builder.Attribute(tagName, attribute)
+		builder.attribute(tagName, attribute)
 	}
+}
 
-	return nil
+func buildFilteredAttributes(template []byte, z *html.Tokenizer, builder *attributesBuilder, allowedAttributes map[string]bool) {
+	tagName, _ := z.TagName()
+	attributes := attributesSpan(z)
+	for _, attribute := range attributes {
+		if _, ok := allowedAttributes[string(template[attribute[0].Start:attribute[0].End])]; ok {
+			continue
+		}
+		builder.attribute(tagName, attribute)
+	}
 }

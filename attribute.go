@@ -1,41 +1,41 @@
-package vhtml
+package dm
 
 type (
-	Attributes []*Attribute
-	Attribute  struct {
-		Boundaries [2]*Span
-		Tag        []byte
+	attrs []*attr
+	attr  struct {
+		boundaries [2]*Span
+		tag        []byte
 	}
 
-	AttributesBuilder struct {
-		attributes Attributes
+	attributesBuilder struct {
+		attributes attrs
 	}
 )
 
-func (a *Attribute) ValueStart() int {
-	return a.Boundaries[1].Start
+func (a *attr) valueStart() int {
+	return a.boundaries[1].Start
 }
 
-func (a *Attribute) ValueEnd() int {
-	return a.Boundaries[1].End
+func (a *attr) valueEnd() int {
+	return a.boundaries[1].End
 }
 
-func (a *Attribute) KeyStart() int {
-	return a.Boundaries[0].Start
+func (a *attr) keyStart() int {
+	return a.boundaries[0].Start
 }
 
-func (a *Attribute) KeyEnd() int {
-	return a.Boundaries[0].End
+func (a *attr) keyEnd() int {
+	return a.boundaries[0].End
 }
 
-func NewBuilder() *AttributesBuilder {
-	return &AttributesBuilder{}
+func newBuilder() *attributesBuilder {
+	return &attributesBuilder{}
 }
 
-func (b *AttributesBuilder) Attribute(parent []byte, spans [2]Span) {
-	b.attributes = append(b.attributes, &Attribute{
-		Tag: parent,
-		Boundaries: [2]*Span{
+func (b *attributesBuilder) attribute(parent []byte, spans [2]Span) {
+	b.attributes = append(b.attributes, &attr{
+		tag: parent,
+		boundaries: [2]*Span{
 			{
 				Start: spans[0].Start,
 				End:   spans[0].End,
@@ -48,6 +48,6 @@ func (b *AttributesBuilder) Attribute(parent []byte, spans [2]Span) {
 	})
 }
 
-func (b *AttributesBuilder) Attributes() Attributes {
+func (b *attributesBuilder) result() attrs {
 	return b.attributes
 }

@@ -1,4 +1,4 @@
-package vhtml
+package dm
 
 type Buffer struct {
 	buffer []byte
@@ -32,6 +32,10 @@ func (b *Buffer) insertBytes(span *Span, offset int, end int, value []byte) int 
 
 func (b *Buffer) bytes() []byte {
 	return b.buffer[:b.pos]
+}
+
+func (b *Buffer) slice(boundary *Span, start, end int) []byte {
+	return b.buffer[boundary.Start+start : boundary.End+end]
 }
 
 func NewBuffer(size int) *Buffer {

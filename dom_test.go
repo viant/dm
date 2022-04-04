@@ -1,4 +1,4 @@
-package vhtml
+package dm
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -52,14 +52,14 @@ func TestDOM(t *testing.T) {
 		},
 	}
 
-	for _, testcase := range testcases[3:4] {
+	for _, testcase := range testcases {
 		templatePath := path.Join(testLocation, "testdata", testcase.uri)
 		template, err := os.ReadFile(path.Join(templatePath, "index.html"))
 		if !assert.Nil(t, err, testcase.description) {
 			t.Fail()
 			continue
 		}
-		dom, err := NewVDom(template, testcase.attributes)
+		dom, err := NewDOM(template, testcase.attributes)
 		if !assert.Nil(t, err, testcase.description) {
 			t.Fail()
 			continue

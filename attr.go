@@ -1,4 +1,4 @@
-package vhtml
+package dm
 
 import (
 	"github.com/viant/xunsafe"
@@ -7,13 +7,13 @@ import (
 	"unsafe"
 )
 
-var spanField *xunsafe.Field
+var attrField *xunsafe.Field
 
 func init() {
 	rType := reflect.TypeOf(&html.Tokenizer{})
-	spanField = xunsafe.FieldByName(rType, "attr")
+	attrField = xunsafe.FieldByName(rType, "attr")
 }
 
-func AttributesSpan(tokenizer *html.Tokenizer) [][2]Span {
-	return *(*[][2]Span)(spanField.Pointer(unsafe.Pointer(tokenizer)))
+func attributesSpan(tokenizer *html.Tokenizer) [][2]Span {
+	return *(*[][2]Span)(attrField.Pointer(unsafe.Pointer(tokenizer)))
 }

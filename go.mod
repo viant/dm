@@ -1,4 +1,4 @@
-module vhtml
+module github.com/viant/dm
 
 go 1.17
 
