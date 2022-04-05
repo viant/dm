@@ -27,30 +27,19 @@ func (d *DOM) Session(options ...Option) *Session {
 func (s *Session) SetAttr(tag, attribute, oldValue, newValue []byte, fullMatch bool) {
 	currOffset := 0
 	currEnd := 0
+	matches := false
 
-	for i, attr := range s.dom.attributes {
+	var attr *attr
+	for i := 1; i < len(s.dom.attributes); i++ { // s.dom.attributes[0] is a sentinel
+		attr = s.dom.attributes[i]
 		s.offsets[i] += currOffset
-		if i == 0 {
-			if !bytes.Equal(s.buffer.slice(attr.boundaries[0], 0, 0), attribute) || !bytes.Equal(attr.tag, tag) {
-				continue
-			}
-		} else {
-			if !bytes.Equal(s.buffer.slice(attr.boundaries[0], s.offsets[i-1], s.offsets[i-1]), attribute) || !bytes.Equal(attr.tag, tag) {
-				continue
-			}
+		if !bytes.Equal(s.buffer.slice(attr.boundaries[0], s.offsets[i-1], s.offsets[i-1]), attribute) || !bytes.Equal(attr.tag, tag) {
+			continue
 		}
 
-		currEnd = 0
-		if i != 0 && s.offsets[i] != s.offsets[i-1] {
-			currEnd = attr.valueEnd() + s.offsets[i] - s.offsets[i-1]
-			if !s.match(fullMatch, s.buffer.buffer[attr.valueStart()+s.offsets[i-1]:currEnd], oldValue) {
-				continue
-			}
-			currEnd = attr.valueEnd() - currEnd
-		} else {
-			if !s.match(fullMatch, s.buffer.buffer[attr.valueStart()+s.offsets[i]:attr.valueEnd()+s.offsets[i]], oldValue) {
-				continue
-			}
+		currEnd, matches = s.attrValueMatches(i, oldValue, fullMatch)
+		if !matches {
+			continue
 		}
 
 		currOffset += s.buffer.insertBytes(attr.boundaries[1], currOffset+s.offsets[i], currEnd, newValue)
@@ -59,31 +48,14 @@ func (s *Session) SetAttr(tag, attribute, oldValue, newValue []byte, fullMatch b
 }
 
 func (s *Session) Attribute(tag, attribute []byte) ([]byte, bool) {
-	if len(s.dom.attributes) == 0 {
-		return nil, false
-	}
-
-	var attrVal []byte
-	var ok bool
-	if attrVal, ok = s.checkByIndex(0, 0, s.offsets[0], tag, attribute); ok {
-		return attrVal, ok
-	}
-
-	for i := 1; i < len(s.dom.attributes); i++ {
-		if attrVal, ok = s.checkByIndex(i, s.offsets[i-1], s.offsets[i], attribute, tag); ok {
-			return attrVal, ok
+	for i := 1; i < len(s.dom.attributes); i++ { // s.dom.attributes[0] is a sentinel
+		if !bytes.Equal(s.buffer.slice(s.dom.attributes[i].boundaries[0], s.offsets[i-1], s.offsets[i-1]), attribute) || !bytes.Equal(s.dom.attributes[i].tag, tag) {
+			continue
 		}
-	}
 
+		return s.buffer.buffer[s.dom.attributes[i].valueStart()+s.offsets[i-1] : s.dom.attributes[i].valueEnd()+s.offsets[i]], true
+	}
 	return nil, false
-}
-
-func (s *Session) checkByIndex(index, startOffset, endOffset int, attribute []byte, tag []byte) ([]byte, bool) {
-	if !bytes.Equal(s.buffer.slice(s.dom.attributes[index].boundaries[0], startOffset, startOffset), attribute) || !bytes.Equal(s.dom.attributes[index].tag, tag) {
-		return nil, false
-	}
-
-	return s.buffer.buffer[s.dom.attributes[index].valueStart()+startOffset : s.dom.attributes[index].valueEnd()+endOffset], true
 }
 
 func (s *Session) match(fullMatch bool, value []byte, oldValue []byte) bool {
@@ -101,4 +73,20 @@ func (s *Session) apply(options []Option) {
 			s.buffer = actual
 		}
 	}
+}
+
+func (s *Session) attrValueMatches(i int, oldValue []byte, fullMatch bool) (int, bool) {
+	if s.offsets[i] != s.offsets[i-1] && s.match(fullMatch, s.buffer.slice(s.attrByIndex(i).boundaries[1], s.offsets[i-1], -(s.offsets[i-1]-s.offsets[i])), oldValue) {
+		return s.offsets[i-1] - s.offsets[i], true
+	}
+
+	if s.match(fullMatch, s.buffer.slice(s.attrByIndex(i).boundaries[1], s.offsets[i], s.offsets[i]), oldValue) {
+		return 0, true
+	}
+
+	return 0, false
+}
+
+func (s *Session) attrByIndex(i int) *attr {
+	return s.dom.attributes[i]
 }

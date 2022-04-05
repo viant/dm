@@ -55,7 +55,6 @@ outer:
 				buildFilteredAttributes(template, node, nodeBuilder, attrAsMap)
 			}
 		}
-
 	}
 
 	d := &DOM{

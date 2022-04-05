@@ -29,7 +29,15 @@ func (a *attr) keyEnd() int {
 }
 
 func newBuilder() *attributesBuilder {
-	return &attributesBuilder{}
+	builder := &attributesBuilder{}
+	builder.attributes = append(builder.attributes, &attr{
+		boundaries: [2]*Span{
+			{},
+			{},
+		},
+		tag: []byte{},
+	})
+	return builder
 }
 
 func (b *attributesBuilder) attribute(parent []byte, spans [2]Span) {
