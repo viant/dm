@@ -12,7 +12,7 @@ import (
 func TestDOM(t *testing.T) {
 	testLocation := toolbox.CallerDirectory(3)
 
-	type newAttribute struct {
+	type attrSearch struct {
 		attribute string
 		oldValue  string
 		newValue  string
@@ -20,39 +20,54 @@ func TestDOM(t *testing.T) {
 		tag       string
 	}
 
+	type innerHTMLSearch struct {
+		attribute string
+		tag       string
+		result    string
+	}
+
 	testcases := []struct {
 		description   string
 		uri           string
-		attributes    []string
-		newAttributes []newAttribute
+		attributes    Filter
+		newAttributes []attrSearch
+		innerHTML     []innerHTMLSearch
 	}{
 		{
 			uri: "template001",
 		},
 		{
 			uri: "template002",
-			newAttributes: []newAttribute{
+			newAttributes: []attrSearch{
 				{tag: "img", attribute: "src", oldValue: "[src]", newValue: "abcdef", fullMatch: true},
 			},
 		},
 		{
 			uri: "template003",
-			newAttributes: []newAttribute{
+			newAttributes: []attrSearch{
 				{tag: "img", attribute: "src", oldValue: "[src]", newValue: "abcdef", fullMatch: true},
 				{tag: "p", attribute: "class", oldValue: "[class]", newValue: "newClasses", fullMatch: true},
 				{tag: "div", attribute: "hidden", oldValue: "[hidden]", newValue: "newHidden", fullMatch: true},
 			},
+			innerHTML: []innerHTMLSearch{
+				{tag: "div", attribute: "hidden", result: `This is div inner`},
+			},
 		},
 		{
 			uri: "template004",
-			newAttributes: []newAttribute{
+			newAttributes: []attrSearch{
 				{tag: "img", attribute: "src", oldValue: "[src]", newValue: "newSrc", fullMatch: true},
 				{tag: "img", attribute: "src", oldValue: "newSrc", newValue: "abcdef", fullMatch: true},
+			},
+			innerHTML: []innerHTMLSearch{
+				{tag: "head", result: `
+    <title>Index</title>
+`},
 			},
 		},
 	}
 
-	for _, testcase := range testcases {
+	for _, testcase := range testcases[3:4] {
 		templatePath := path.Join(testLocation, "testdata", testcase.uri)
 		template, err := os.ReadFile(path.Join(templatePath, "index.html"))
 		if !assert.Nil(t, err, testcase.description) {
@@ -67,9 +82,23 @@ func TestDOM(t *testing.T) {
 
 		session := dom.Session()
 		for _, newAttr := range testcase.newAttributes {
-			session.SetAttr([]byte(newAttr.tag), []byte(newAttr.attribute), []byte(newAttr.oldValue), []byte(newAttr.newValue), newAttr.fullMatch)
-			attrVal, _ := session.Attribute([]byte(newAttr.tag), []byte(newAttr.attribute))
+			session.SetAttr(0, []byte(newAttr.newValue), []byte(newAttr.tag), []byte(newAttr.attribute), []byte(newAttr.oldValue))
+			attrVal, _, _ := session.Attribute(0, []byte(newAttr.tag), []byte(newAttr.attribute))
 			assert.Equal(t, newAttr.newValue, string(attrVal), testcase.uri)
+		}
+
+		for _, search := range testcase.innerHTML {
+			selectors := make([][]byte, 0)
+			if search.tag != "" {
+				selectors = append(selectors, []byte(search.tag))
+			}
+
+			if search.attribute != "" {
+				selectors = append(selectors, []byte(search.attribute))
+			}
+
+			innerHTML, _ := session.InnerHTML(0, selectors...)
+			assertly.AssertValues(t, search.result, string(innerHTML))
 		}
 
 		result, err := os.ReadFile(path.Join(templatePath, "expect.html"))

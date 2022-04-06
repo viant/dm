@@ -4,11 +4,21 @@ type (
 	attrs []*attr
 	attr  struct {
 		boundaries [2]*Span
-		tag        []byte
+		tag        int
 	}
 
-	attributesBuilder struct {
+	tags []*tag
+	tag  struct {
+		InnerHTML *Span
+		TagName   *Span
+		AttrEnd   int
+	}
+
+	elementsBuilder struct {
 		attributes attrs
+		tags
+		tagIndexes []int
+		tagCounter int
 	}
 )
 
@@ -28,21 +38,20 @@ func (a *attr) keyEnd() int {
 	return a.boundaries[0].End
 }
 
-func newBuilder() *attributesBuilder {
-	builder := &attributesBuilder{}
+func newBuilder() *elementsBuilder {
+	builder := &elementsBuilder{}
 	builder.attributes = append(builder.attributes, &attr{
-		boundaries: [2]*Span{
-			{},
-			{},
-		},
-		tag: []byte{},
+		boundaries: [2]*Span{{}, {}}, //tag 0 is a sentinel
+		tag:        0,
 	})
+	builder.tags = append(builder.tags, &tag{})
+
 	return builder
 }
 
-func (b *attributesBuilder) attribute(parent []byte, spans [2]Span) {
+func (b *elementsBuilder) attribute(spans [2]Span) {
 	b.attributes = append(b.attributes, &attr{
-		tag: parent,
+		tag: b.tagCounter,
 		boundaries: [2]*Span{
 			{
 				Start: spans[0].Start,
@@ -56,6 +65,36 @@ func (b *attributesBuilder) attribute(parent []byte, spans [2]Span) {
 	})
 }
 
-func (b *attributesBuilder) result() attrs {
-	return b.attributes
+func (b *elementsBuilder) newTag(start int, span Span, selfClosing bool) {
+	b.tagCounter++
+
+	aTag := &tag{
+		InnerHTML: &Span{
+			Start: start,
+		},
+		TagName: &Span{
+			Start: span.Start,
+			End:   span.End,
+		},
+	}
+	if selfClosing {
+		aTag.InnerHTML.End = start
+	} else {
+		b.tagIndexes = append(b.tagIndexes, b.tagCounter)
+	}
+
+	b.tags = append(b.tags, aTag)
+}
+
+func (b *elementsBuilder) closeTag(end int) {
+	b.tags[b.tagIndexes[len(b.tagIndexes)-1]].InnerHTML.End = end
+	b.tagIndexes = b.tagIndexes[:len(b.tagIndexes)-1]
+}
+
+func (b *elementsBuilder) attributesBuilt() {
+	b.tags[b.lastTag()].AttrEnd = len(b.attributes)
+}
+
+func (b *elementsBuilder) lastTag() int {
+	return len(b.tags) - 1
 }
