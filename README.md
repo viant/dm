@@ -32,7 +32,7 @@ dom, err := dm.New(template, bufferSize, filter)
 // handle error
 ```
 
-Then you need to create the `Session`:
+Then you need to create a `Session`:
 ```go
 newSession := dom.Session()
 sessionWithBuffer := dom.Session(dm.NewBuffer(1024))
