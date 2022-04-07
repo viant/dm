@@ -7,6 +7,7 @@ import (
 )
 
 type (
+	//DOM represents DOM structure
 	DOM struct {
 		template          []byte
 		initialBufferSize int
@@ -14,6 +15,7 @@ type (
 		filter            Filter
 	}
 
+	//Filter represents tags and attributes filter
 	Filter map[string]map[string]bool
 )
 
@@ -26,23 +28,7 @@ func (d *DOM) apply(options []Option) {
 	}
 }
 
-func (d *DOM) rebuildTemplate(newInnerHTML []byte) (int, error) {
-	buffer := NewBuffer(len(d.template))
-	buffer.appendBytes(d.template)
-
-	diff := buffer.insertBytes(d.builder.tags[d.builder.lastTag()].InnerHTML, 0, 0, newInnerHTML)
-	for i := 1; i < len(d.builder.tags); i++ {
-		d.builder.tags[i].InnerHTML.End += diff
-	}
-
-	if err := d.buildTemplate(newInnerHTML); err != nil {
-		return diff, err
-	}
-
-	d.template = buffer.bytes()
-	return diff, nil
-}
-
+//NewDOM parses template and creates new DOM. Filter can be specified to index some tags and attributes.
 func NewDOM(template []byte, attributes Filter, options ...Option) (*DOM, error) {
 	domBuilder := newBuilder()
 	d := &DOM{
@@ -78,7 +64,7 @@ outer:
 			break outer
 
 		case html.StartTagToken, html.SelfClosingTagToken:
-			d.builder.newTag(rawSpan(node).End, dataSpan(node), html.SelfClosingTagToken == next)
+			d.builder.newTag(rawSpan(node).end, dataSpan(node), html.SelfClosingTagToken == next)
 			if d.filter == nil {
 				buildAllAttributes(node, d.builder)
 			} else {
@@ -86,7 +72,7 @@ outer:
 			}
 			d.builder.attributesBuilt()
 		case html.EndTagToken:
-			d.builder.closeTag(rawSpan(node).Start)
+			d.builder.closeTag(rawSpan(node).start)
 		}
 	}
 	return nil
@@ -109,18 +95,9 @@ func buildFilteredAttributes(template []byte, z *html.Tokenizer, builder *elemen
 
 	attributes := attributesSpan(z)
 	for _, attribute := range attributes {
-		if _, ok := attributeFilter[string(template[attribute[0].Start:attribute[0].End])]; !ok {
+		if _, ok := attributeFilter[string(template[attribute[0].start:attribute[0].end])]; !ok {
 			continue
 		}
 		builder.attribute(attribute)
-	}
-}
-
-func newInnerDOM(dom *DOM, e *elementsBuilder, template []byte, d *DOM) *DOM {
-	return &DOM{
-		template:          template,
-		initialBufferSize: dom.initialBufferSize,
-		builder:           e,
-		filter:            d.filter,
 	}
 }

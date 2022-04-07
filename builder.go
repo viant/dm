@@ -14,49 +14,49 @@ type (
 func newBuilder() *elementsBuilder {
 	builder := &elementsBuilder{}
 	builder.attributes = append(builder.attributes, &attr{
-		boundaries: [2]*Span{{}, {}}, //tag 0 is a sentinel
+		boundaries: [2]*span{{}, {}}, //tag 0 is a sentinel
 		tag:        0,
 	})
 	builder.tags = append(builder.tags, &tag{
-		Depth:     -1,
-		InnerHTML: &Span{},
-		TagName:   &Span{},
+		depth:     -1,
+		innerHTML: &span{},
+		tagName:   &span{},
 	})
 
 	return builder
 }
 
-func (b *elementsBuilder) attribute(spans [2]Span) {
+func (b *elementsBuilder) attribute(spans [2]span) {
 	b.attributes = append(b.attributes, &attr{
 		tag: b.tagCounter,
-		boundaries: [2]*Span{
+		boundaries: [2]*span{
 			{
-				Start: spans[0].Start + b.offset,
-				End:   spans[0].End + b.offset,
+				start: spans[0].start + b.offset,
+				end:   spans[0].end + b.offset,
 			},
 			{
-				Start: spans[1].Start + b.offset,
-				End:   spans[1].End + b.offset,
+				start: spans[1].start + b.offset,
+				end:   spans[1].end + b.offset,
 			},
 		},
 	})
 }
 
-func (b *elementsBuilder) newTag(start int, span Span, selfClosing bool) {
+func (b *elementsBuilder) newTag(start int, tagSpan span, selfClosing bool) {
 	aTag := &tag{
-		Depth: b.depth,
-		InnerHTML: &Span{
-			Start: start + b.offset,
+		depth: b.depth,
+		innerHTML: &span{
+			start: start + b.offset,
 		},
-		TagName: &Span{
-			Start: span.Start + b.offset,
-			End:   span.End + b.offset,
+		tagName: &span{
+			start: tagSpan.start + b.offset,
+			end:   tagSpan.end + b.offset,
 		},
 	}
 
 	b.tagCounter++
 	if selfClosing {
-		aTag.InnerHTML.End = start + b.offset
+		aTag.innerHTML.end = start + b.offset
 	} else {
 		b.depth++
 		b.tagIndexes = append(b.tagIndexes, b.tagCounter)
@@ -67,12 +67,12 @@ func (b *elementsBuilder) newTag(start int, span Span, selfClosing bool) {
 
 func (b *elementsBuilder) closeTag(end int) {
 	b.depth--
-	b.tags[b.tagIndexes[len(b.tagIndexes)-1]].InnerHTML.End = end
+	b.tags[b.tagIndexes[len(b.tagIndexes)-1]].innerHTML.end = end
 	b.tagIndexes = b.tagIndexes[:len(b.tagIndexes)-1]
 }
 
 func (b *elementsBuilder) attributesBuilt() {
-	b.tags[b.lastTag()].AttrEnd = len(b.attributes)
+	b.tags[b.lastTag()].attrEnd = len(b.attributes)
 }
 
 func (b *elementsBuilder) lastTag() int {

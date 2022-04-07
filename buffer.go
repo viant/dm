@@ -1,5 +1,6 @@
 package dm
 
+//Buffer hold the current DOM value
 type Buffer struct {
 	buffer []byte
 	pos    int
@@ -20,12 +21,12 @@ func (b *Buffer) growIfNeeded(grow int) {
 	b.buffer = newBuffer
 }
 
-func (b *Buffer) insertBytes(span *Span, offset int, end int, value []byte) int {
-	increased := len(value) - span.End + span.Start + end
+func (b *Buffer) replaceBytes(span *span, offset int, incraesedSize int, value []byte) int {
+	increased := len(value) - span.end + span.start + incraesedSize
 	b.growIfNeeded(increased)
 
-	copy(b.buffer[span.End+offset+increased:], b.buffer[span.End+offset:])
-	copy(b.buffer[span.Start+offset+end:], value)
+	copy(b.buffer[span.end+offset+increased:], b.buffer[span.end+offset:])
+	copy(b.buffer[span.start+offset+incraesedSize:], value)
 	b.pos += increased
 	return increased
 }
@@ -34,14 +35,15 @@ func (b *Buffer) bytes() []byte {
 	return b.buffer[:b.pos]
 }
 
-func (b *Buffer) slice(boundary *Span, start, end int) []byte {
-	return b.buffer[boundary.Start+start : boundary.End+end]
+func (b *Buffer) slice(boundary *span, start, end int) []byte {
+	return b.buffer[boundary.start+start : boundary.end+end]
 }
 
 func (b *Buffer) reset() {
 	b.pos = 0
 }
 
+//NewBuffer creates new buffer of given size.
 func NewBuffer(size int) *Buffer {
 	return &Buffer{
 		buffer: make([]byte, size),

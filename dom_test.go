@@ -71,7 +71,7 @@ func TestDOM(t *testing.T) {
 		},
 	}
 
-	for _, testcase := range testcases[2:3] {
+	for _, testcase := range testcases {
 		templatePath := path.Join(testLocation, "testdata", testcase.uri)
 		template, err := os.ReadFile(path.Join(templatePath, "index.html"))
 		if !assert.Nil(t, err, testcase.description) {
@@ -86,8 +86,8 @@ func TestDOM(t *testing.T) {
 
 		session := dom.Session()
 		for _, newAttr := range testcase.newAttributes {
-			session.SetAttr(0, []byte(newAttr.newValue), []byte(newAttr.tag), []byte(newAttr.attribute), []byte(newAttr.oldValue))
-			attrVal, _, _ := session.Attribute(0, []byte(newAttr.tag), []byte(newAttr.attribute))
+			session.SetAttribute(0, []byte(newAttr.newValue), []byte(newAttr.tag), []byte(newAttr.attribute), []byte(newAttr.oldValue))
+			attrVal, _ := session.Attribute(0, []byte(newAttr.tag), []byte(newAttr.attribute))
 			assert.Equal(t, newAttr.newValue, string(attrVal), testcase.uri)
 		}
 

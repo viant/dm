@@ -18,14 +18,14 @@ func init() {
 	dataField = xunsafe.FieldByName(rType, "data")
 }
 
-func attributesSpan(tokenizer *html.Tokenizer) [][2]Span {
-	return *(*[][2]Span)(attrField.Pointer(unsafe.Pointer(tokenizer)))
+func attributesSpan(tokenizer *html.Tokenizer) [][2]span {
+	return *(*[][2]span)(attrField.Pointer(unsafe.Pointer(tokenizer)))
 }
 
-func rawSpan(tokenizer *html.Tokenizer) Span {
-	return *(*Span)(rawField.Pointer(unsafe.Pointer(tokenizer)))
+func rawSpan(tokenizer *html.Tokenizer) span {
+	return *(*span)(rawField.Pointer(unsafe.Pointer(tokenizer)))
 }
 
-func dataSpan(tokenizer *html.Tokenizer) Span {
-	return *(*Span)(dataField.Pointer(unsafe.Pointer(tokenizer)))
+func dataSpan(tokenizer *html.Tokenizer) span {
+	return *(*span)(dataField.Pointer(unsafe.Pointer(tokenizer)))
 }
