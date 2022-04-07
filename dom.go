@@ -24,17 +24,28 @@ func (d *DOM) apply(options []Option) {
 		switch actual := option.(type) {
 		case BufferSize:
 			d.initialBufferSize = int(actual)
+		case Filter:
+			d.filter = actual
 		}
 	}
 }
 
-//NewDOM parses template and creates new DOM. Filter can be specified to index some tags and attributes.
-func NewDOM(template []byte, attributes Filter, options ...Option) (*DOM, error) {
+//AttributesLen returns number of attributes. Attributes[0] is an empty attribute.
+func (d *DOM) AttributesLen() int {
+	return len(d.builder.attributes)
+}
+
+//TagLen returns number of tags. Tag[0] is an empty tag.
+func (d *DOM) TagLen() int {
+	return len(d.builder.tags)
+}
+
+//New parses template and creates new DOM. Filter can be specified to index some tags and attributes.
+func New(template []byte, options ...Option) (*DOM, error) {
 	domBuilder := newBuilder()
 	d := &DOM{
 		template: template,
 		builder:  domBuilder,
-		filter:   attributes,
 	}
 	d.apply(options)
 
@@ -64,6 +75,13 @@ outer:
 			break outer
 
 		case html.StartTagToken, html.SelfClosingTagToken:
+			if d.filter != nil {
+				tagName, _ := node.TagName()
+				if _, ok := d.filter[string(tagName)]; !ok {
+					continue outer
+				}
+			}
+
 			d.builder.newTag(rawSpan(node).end, dataSpan(node), html.SelfClosingTagToken == next)
 			if d.filter == nil {
 				buildAllAttributes(node, d.builder)
@@ -87,12 +105,7 @@ func buildAllAttributes(z *html.Tokenizer, builder *elementsBuilder) {
 
 func buildFilteredAttributes(template []byte, z *html.Tokenizer, builder *elementsBuilder, tagFilter Filter) {
 	tagName, _ := z.TagName()
-	var ok bool
-	var attributeFilter map[string]bool
-	if attributeFilter, ok = tagFilter[string(tagName)]; !ok {
-		return
-	}
-
+	attributeFilter := tagFilter[string(tagName)]
 	attributes := attributesSpan(z)
 	for _, attribute := range attributes {
 		if _, ok := attributeFilter[string(template[attribute[0].start:attribute[0].end])]; !ok {

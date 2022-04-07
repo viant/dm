@@ -78,7 +78,7 @@ func TestDOM(t *testing.T) {
 			t.Fail()
 			continue
 		}
-		dom, err := NewDOM(template, testcase.attributes)
+		dom, err := New(template, testcase.attributes)
 		if !assert.Nil(t, err, testcase.description) {
 			t.Fail()
 			continue
