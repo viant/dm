@@ -23,7 +23,7 @@ func TestDOM(t *testing.T) {
 	type innerHTMLSearch struct {
 		attribute string
 		tag       string
-		result    string
+		value     string
 	}
 
 	testcases := []struct {
@@ -31,7 +31,8 @@ func TestDOM(t *testing.T) {
 		uri           string
 		attributes    Filter
 		newAttributes []attrSearch
-		innerHTML     []innerHTMLSearch
+		innerHTMLGet  []innerHTMLSearch
+		innerHTMLSet  []innerHTMLSearch
 	}{
 		{
 			uri: "template001",
@@ -49,8 +50,11 @@ func TestDOM(t *testing.T) {
 				{tag: "p", attribute: "class", oldValue: "[class]", newValue: "newClasses", fullMatch: true},
 				{tag: "div", attribute: "hidden", oldValue: "[hidden]", newValue: "newHidden", fullMatch: true},
 			},
-			innerHTML: []innerHTMLSearch{
-				{tag: "div", attribute: "hidden", result: `This is div inner`},
+			innerHTMLGet: []innerHTMLSearch{
+				{tag: "div", attribute: "hidden", value: `This is div inner`},
+			},
+			innerHTMLSet: []innerHTMLSearch{
+				{tag: "div", attribute: "hidden", value: `<iframe hidden><div class="div-class">Hello world</div></iframe>`},
 			},
 		},
 		{
@@ -59,15 +63,15 @@ func TestDOM(t *testing.T) {
 				{tag: "img", attribute: "src", oldValue: "[src]", newValue: "newSrc", fullMatch: true},
 				{tag: "img", attribute: "src", oldValue: "newSrc", newValue: "abcdef", fullMatch: true},
 			},
-			innerHTML: []innerHTMLSearch{
-				{tag: "head", result: `
+			innerHTMLGet: []innerHTMLSearch{
+				{tag: "head", value: `
     <title>Index</title>
 `},
 			},
 		},
 	}
 
-	for _, testcase := range testcases[3:4] {
+	for _, testcase := range testcases[2:3] {
 		templatePath := path.Join(testLocation, "testdata", testcase.uri)
 		template, err := os.ReadFile(path.Join(templatePath, "index.html"))
 		if !assert.Nil(t, err, testcase.description) {
@@ -87,7 +91,7 @@ func TestDOM(t *testing.T) {
 			assert.Equal(t, newAttr.newValue, string(attrVal), testcase.uri)
 		}
 
-		for _, search := range testcase.innerHTML {
+		for _, search := range testcase.innerHTMLGet {
 			selectors := make([][]byte, 0)
 			if search.tag != "" {
 				selectors = append(selectors, []byte(search.tag))
@@ -98,7 +102,20 @@ func TestDOM(t *testing.T) {
 			}
 
 			innerHTML, _ := session.InnerHTML(0, selectors...)
-			assertly.AssertValues(t, search.result, string(innerHTML))
+			assertly.AssertValues(t, search.value, string(innerHTML))
+		}
+
+		for _, search := range testcase.innerHTMLSet {
+			selectors := make([][]byte, 0)
+			if search.tag != "" {
+				selectors = append(selectors, []byte(search.tag))
+			}
+
+			if search.attribute != "" {
+				selectors = append(selectors, []byte(search.attribute))
+			}
+
+			_, _ = session.SetInnerHTML(0, []byte(search.value), selectors...)
 		}
 
 		result, err := os.ReadFile(path.Join(templatePath, "expect.html"))

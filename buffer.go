@@ -38,6 +38,10 @@ func (b *Buffer) slice(boundary *Span, start, end int) []byte {
 	return b.buffer[boundary.Start+start : boundary.End+end]
 }
 
+func (b *Buffer) reset() {
+	b.pos = 0
+}
+
 func NewBuffer(size int) *Buffer {
 	return &Buffer{
 		buffer: make([]byte, size),
