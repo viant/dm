@@ -84,11 +84,14 @@ func TestDOM(t *testing.T) {
 			continue
 		}
 
-		session := dom.Session()
+		session := dom.Template()
 		for _, newAttr := range testcase.newAttributes {
-			session.SetAttribute(0, []byte(newAttr.newValue), []byte(newAttr.tag), []byte(newAttr.attribute), []byte(newAttr.oldValue))
-			attrVal, _ := session.Attribute(0, []byte(newAttr.tag), []byte(newAttr.attribute))
-			assert.Equal(t, newAttr.newValue, string(attrVal), testcase.uri)
+			attrIterator := session.SelectAttributes([]byte(newAttr.tag), []byte(newAttr.attribute), []byte(newAttr.oldValue))
+			for attrIterator.HasMore() {
+				attr, _ := attrIterator.Next()
+				attr.Set([]byte(newAttr.newValue))
+				assert.Equal(t, newAttr.newValue, string(attr.Value()), testcase.uri)
+			}
 		}
 
 		for _, search := range testcase.innerHTMLGet {
@@ -101,8 +104,11 @@ func TestDOM(t *testing.T) {
 				selectors = append(selectors, []byte(search.attribute))
 			}
 
-			innerHTML, _ := session.InnerHTML(0, selectors...)
-			assertly.AssertValues(t, search.value, string(innerHTML))
+			tagIt := session.SelectTags(selectors...)
+			for tagIt.HasMore() {
+				element, _ := tagIt.Next()
+				assertly.AssertValues(t, search.value, string(element.InnerHTML()))
+			}
 		}
 
 		for _, search := range testcase.innerHTMLSet {
@@ -115,7 +121,11 @@ func TestDOM(t *testing.T) {
 				selectors = append(selectors, []byte(search.attribute))
 			}
 
-			_, _ = session.SetInnerHTML(0, []byte(search.value), selectors...)
+			selectorIt := session.SelectTags(selectors...)
+			for selectorIt.HasMore() {
+				element, _ := selectorIt.Next()
+				_ = element.SetInnerHTML([]byte(search.value))
+			}
 		}
 
 		result, err := os.ReadFile(path.Join(templatePath, "expect.html"))

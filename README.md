@@ -21,21 +21,22 @@ dom, err := dm.New(template)
 
 You can specify some options while creating `DOM`:
 * `BufferSize` - initial buffer size for each `DOM` session, `int` wrapper
-* `Filter` - represents allowed tags and attributes, `map[string]map[string]bool` wrapper. The outer map, specifies the tags, 
+* `Filter` - represents allowed tags and attributes
 the inner - attributes. The value of inner map is not important, if value is specified in the map, the attribute may be indexed.
 ```go
 bufferSize := dm.BufferSize(1024)
-filter := dm.Filter(map[string]map[string]bool{
-	"div": {"class": true} 
-})
+filter := dm.NewFilter(
+	dm.NewTagFilter("div", "class"), 
+	dm.NewTagFilter("img", "src")
+	)
 dom, err := dm.New(template, bufferSize, filter)
 // handle error
 ```
 
 Then you need to create a `Session`:
 ```go
-newSession := dom.Session()
-sessionWithBuffer := dom.Session(dm.NewBuffer(1024))
+newTemplate := dom.Template()
+templateWithBuffer := dom.Template(dm.NewBuffer(1024))
 ```
 If you don't provide a `Buffer`, will be created one with `BufferSize` specified while creating `DOM`
 
@@ -46,16 +47,11 @@ tag will be checked.
 
 `InnerHTML / Attribute` usage:
 ```go
-
-var offset int
-var innerHTML []byte
-for {
-    innerHTML, offset = session.InnerHTML(offset, []byte("div"))
-    if offset == -1 {
-    	break
-    }
-    //...
-    session.SetInnerHTMLByIndex(offset, bytes.Trim(innerHTML))
+tagIterator := template.SelectTags([]byte("div"))
+for tagIterator.HasMore() {
+    tag, _ := tagIterator.Next()
+    innerHTML := tag.InnerHTML()
+    tag.SetInnerHTML(bytes.TrimSpace(innerHTML))
 }
 ```
 
@@ -63,13 +59,11 @@ for {
 
 ```go
 
-var offset int
-for {
-    offset = session.SetInnerHTML(offset, []byte("This is new inner HTML") ,[]byte("div")), []byte("class"), []byte("div-class"))
-    if offset == -1 {
-        break
-    }
-    //... 
+attributeIterator := template.SelectTags([]byte("div"))
+for attributeIterator.HasMore() {
+    attribute, _ := attributeIterator.Next()
+    attrValue := attribute.Value()
+    attribute.SetValue(bytes.TrimSpace(attrValue))
 }
 ```
 

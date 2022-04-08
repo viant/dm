@@ -52,6 +52,7 @@ func (b *elementsBuilder) newTag(start int, tagSpan span, selfClosing bool) {
 			start: tagSpan.start + b.offset,
 			end:   tagSpan.end + b.offset,
 		},
+		index: b.tagCounter + 1,
 	}
 
 	b.tagCounter++

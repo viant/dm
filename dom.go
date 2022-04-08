@@ -12,11 +12,8 @@ type (
 		template          []byte
 		initialBufferSize int
 		builder           *elementsBuilder
-		filter            Filter
+		filter            *Filter
 	}
-
-	//Filter represents tags and attributes filter
-	Filter map[string]map[string]bool
 )
 
 func (d *DOM) apply(options []Option) {
@@ -24,7 +21,7 @@ func (d *DOM) apply(options []Option) {
 		switch actual := option.(type) {
 		case BufferSize:
 			d.initialBufferSize = int(actual)
-		case Filter:
+		case *Filter:
 			d.filter = actual
 		}
 	}
@@ -33,11 +30,6 @@ func (d *DOM) apply(options []Option) {
 //AttributesLen returns number of attributes. Attributes[0] is an empty attribute.
 func (d *DOM) AttributesLen() int {
 	return len(d.builder.attributes)
-}
-
-//TagLen returns number of tags. Tag[0] is an empty tag.
-func (d *DOM) TagLen() int {
-	return len(d.builder.tags)
 }
 
 //New parses template and creates new DOM. Filter can be specified to index some tags and attributes.
@@ -77,7 +69,7 @@ outer:
 		case html.StartTagToken, html.SelfClosingTagToken:
 			if d.filter != nil {
 				tagName, _ := node.TagName()
-				if _, ok := d.filter[string(tagName)]; !ok {
+				if _, ok := d.filter.tagFilter(string(tagName)); !ok {
 					continue outer
 				}
 			}
@@ -103,12 +95,15 @@ func buildAllAttributes(z *html.Tokenizer, builder *elementsBuilder) {
 	}
 }
 
-func buildFilteredAttributes(template []byte, z *html.Tokenizer, builder *elementsBuilder, tagFilter Filter) {
+func buildFilteredAttributes(template []byte, z *html.Tokenizer, builder *elementsBuilder, tagFilter *Filter) {
 	tagName, _ := z.TagName()
-	attributeFilter := tagFilter[string(tagName)]
+	attributeFilter, ok := tagFilter.tagFilter(string(tagName))
+	if !ok {
+		return
+	}
 	attributes := attributesSpan(z)
 	for _, attribute := range attributes {
-		if _, ok := attributeFilter[string(template[attribute[0].start:attribute[0].end])]; !ok {
+		if ok := attributeFilter.matches(string(template[attribute[0].start:attribute[0].end])); !ok {
 			continue
 		}
 		builder.attribute(attribute)
