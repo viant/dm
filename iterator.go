@@ -97,7 +97,6 @@ func (at *AttributeIterator) Next() (*Attribute, error) {
 		parent:   at.template.attribute(at.index).tag,
 	}
 
-	at.current = at.template.tag(at.template.attribute(at.index).tag).attrEnd
-	at.next = at.current
+	at.current = at.next
 	return result, nil
 }

@@ -91,6 +91,9 @@ func (d *DOM) nextAttribute(offset int, selectors ...string) (newOffset int, ind
 }
 
 func (d *DOM) matchAttributeByTag(offset int, selectors []string) (int, int) {
+	if offset == 0 {
+		offset = 1
+	}
 	for i := offset; i < len(d.dom.attributes); i++ {
 		if !d.matchTag(d.attribute(i).tag, selectors) {
 			continue

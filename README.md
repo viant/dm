@@ -27,7 +27,7 @@ the inner - attributes. The value of inner map is not important, if value is spe
 bufferSize := dm.BufferSize(1024)
 filter := dm.NewFilter(
 	dm.NewTagFilter("div", "class"), 
-	dm.NewTagFilter("img", "src")
+	dm.NewTagFilter("img", "src"),
 	)
 dom, err := dm.New(template, bufferSize, filter)
 // handle error
@@ -45,25 +45,55 @@ Now you can get/set Attribute, get/set InnerHTML either by using selectors, or b
 Selectors order: `Tag` -> `Attribute` -> `Attribute value`. Selectors are optional, it means if you don't specify `Attribute` only 
 tag will be checked. 
 
-`InnerHTML / Attribute` usage:
-```go
-tagIterator := template.SelectTags([]byte("div"))
-for tagIterator.HasMore() {
-    tag, _ := tagIterator.Next()
-    innerHTML := tag.InnerHTML()
-    tag.SetInnerHTML(bytes.TrimSpace(innerHTML))
-}
-```
-
-`SetInnerHTML / SetAttribute` usage:
+Usage:
 
 ```go
+	template := `<!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <title>Index</title>
+        </head>
+        <body>
+            <p class="[class]">Classes</p>
+            <img src="[src]" alt="alt"/>
+            <div hidden="[hidden]">This is div inner</div>
+        </body>
+        </html>`
 
-attributeIterator := template.SelectTags([]byte("div"))
-for attributeIterator.HasMore() {
-    attribute, _ := attributeIterator.Next()
-    attrValue := attribute.Value()
-    attribute.SetValue(bytes.TrimSpace(attrValue))
+	vdom, err := New(template)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	filter := NewFilter(
+		NewTagFilter("div", "hidden"),
+		NewTagFilter("img", "src"),
+	)
+
+	bufferSize := BufferSize(1024)
+	dom := vdom.DOM(filter, bufferSize)
+
+	elemIt := dom.Select("div", "hidden")
+	for elemIt.Has() {
+		elem, _ := elemIt.Next()
+		fmt.Println(elem.InnerHTML())
+		_ = elem.SetInnerHTML("This will be new InnerHTML")
+		attribute, ok := elem.Attribute("hidden", "[hidden]")
+		if ok {
+			attribute.Set("true")
+			fmt.Println(attribute.Value())
+		}
+	}
+
+	attributeIt := dom.SelectAttributes("img", "src", "[src]")
+	for attributeIt.Has() {
+		attribute, _ := attributeIt.Next()
+		attribute.Set("abcdef.jpg")
+		fmt.Println(attribute.Value())
+	}
+
+	fmt.Println(dom.Render())
 }
 ```
 
