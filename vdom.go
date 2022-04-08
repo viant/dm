@@ -78,7 +78,7 @@ outer:
 
 			v.builder.newTag(string(tagName), rawSpan(node).end, nodeSpan, html.SelfClosingTagToken == next)
 			if v.filter == nil {
-				buildAllAttributes(node, v.builder)
+				buildAllAttributes(template, node, v.builder)
 			} else {
 				buildFilteredAttributes(template, tagName, node, v.builder, v.filter)
 			}
@@ -96,10 +96,10 @@ outer:
 	return nil
 }
 
-func buildAllAttributes(z *html.Tokenizer, builder *builder) {
+func buildAllAttributes(template []byte, z *html.Tokenizer, builder *builder) {
 	attributes := attributesSpan(z)
 	for _, attribute := range attributes {
-		builder.attribute(attribute)
+		builder.attribute(template, attribute)
 	}
 }
 
@@ -113,6 +113,6 @@ func buildFilteredAttributes(template []byte, tagName []byte, z *html.Tokenizer,
 		if ok := attributeFilter.matches(string(template[attribute[0].start:attribute[0].end])); !ok {
 			continue
 		}
-		builder.attribute(attribute)
+		builder.attribute(template, attribute)
 	}
 }

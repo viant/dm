@@ -18,6 +18,7 @@ type (
 	//AttributeIterator iterates over matching attributes
 	AttributeIterator struct {
 		iterator
+		index int
 	}
 )
 
@@ -67,11 +68,15 @@ func (at *AttributeIterator) Has() bool {
 		return true
 	}
 
-	if at.next == -1 {
+	if at.next == -1 && at.current != -1 {
 		return false
 	}
 
-	at.next = at.template.nextAttribute(at.current, at.selectors...)
+	if at.current == -1 {
+		at.next, at.index = at.template.nextAttribute(0, at.selectors...)
+	} else {
+		at.next, at.index = at.template.nextAttribute(at.current+1, at.selectors...)
+	}
 	return at.next != -1
 }
 
@@ -88,11 +93,11 @@ func (at *AttributeIterator) Next() (*Attribute, error) {
 
 	result := &Attribute{
 		template: at.template,
-		index:    at.next,
-		parent:   at.template.attribute(at.current).tag,
+		index:    at.index,
+		parent:   at.template.attribute(at.index).tag,
 	}
 
-	at.current = at.template.tag(at.template.attribute(at.current).tag).attrEnd
+	at.current = at.template.tag(at.template.attribute(at.index).tag).attrEnd
 	at.next = at.current
 	return result, nil
 }

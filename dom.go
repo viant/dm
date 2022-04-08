@@ -57,8 +57,8 @@ func (d *DOM) SelectAttributes(selectors ...string) *AttributeIterator {
 	return &AttributeIterator{
 		iterator: iterator{
 			template:  d,
-			current:   0,
-			next:      0,
+			current:   -1,
+			next:      -1,
 			selectors: selectors,
 		},
 	}
@@ -80,23 +80,24 @@ func (d *DOM) updateAttributeValue(i int, newValue []byte) {
 	}
 }
 
-func (d *DOM) nextAttribute(offset int, selectors ...string) int {
-	for i := offset + 1; i < len(d.dom.attributes); i++ { // d.dom.attributes[0] is a sentinel
-		if !d.matchTag(d.dom.attributes[i].tag, selectors) {
-			continue
-		}
-
-		if !d.matchAttributeName(i, selectors) {
-			continue
-		}
-
-		if !d.matchAttributeValue(i, selectors) {
-			continue
-		}
-
-		return i
+func (d *DOM) nextAttribute(offset int, selectors ...string) (newOffset int, index int) {
+	if len(selectors) <= 1 {
+		newOffset, index = d.matchAttributeByTag(offset, selectors)
+	} else {
+		newOffset, index = d.matchAttributeByAttributeName(offset, selectors)
 	}
-	return -1
+
+	return newOffset, index
+}
+
+func (d *DOM) matchAttributeByTag(offset int, selectors []string) (int, int) {
+	for i := offset; i < len(d.dom.attributes); i++ {
+		if !d.matchTag(d.attribute(i).tag, selectors) {
+			continue
+		}
+		return i, i
+	}
+	return -1, -1
 }
 
 func (d *DOM) attributeByIndex(i int) []byte {
@@ -113,27 +114,32 @@ func (d *DOM) nextMatchingTag(offset int, selectors []string) int {
 		return offset + 1
 	}
 
-	groupIndex := d.dom.index.tag(selectors[0], false)
+	groupIndex := d.dom.index.tagIndex(selectors[0], false)
 	if groupIndex == -1 || len(d.dom.tagsGrouped[groupIndex]) <= offset {
 		return -1
 	}
 
 	tagIndex := d.dom.tagsGrouped[groupIndex][offset]
-	if len(selectors) == 1 {
-		return tagIndex
-	}
-
-	attrStart := d.tag(tagIndex - 1).attrEnd
-	for i := attrStart; i < len(d.dom.attributes); i++ {
-		if !d.matchAttributeName(i, selectors) {
+	for i := tagIndex; i < len(d.dom.tags); i++ {
+		if d.tagsRemoved[i] {
 			continue
 		}
 
-		if !d.matchAttributeValue(i, selectors) {
-			continue
+		if len(selectors) == 1 {
+			return i
 		}
 
-		return d.attribute(i).tag
+		for j := d.tag(i - 1).attrEnd; j < d.tag(i).attrEnd; j++ {
+			if !d.matchAttributeName(j, selectors) {
+				continue
+			}
+
+			if !d.matchAttributeValue(j, selectors) {
+				continue
+			}
+
+			return i
+		}
 	}
 	return -1
 }
@@ -249,4 +255,25 @@ func (d *DOM) tagLen() int {
 
 func (d *DOM) tagAttributes(i int) attrs {
 	return d.dom.attributes[d.tag(i-1).attrEnd:d.tag(i).attrEnd]
+}
+
+func (d *DOM) matchAttributeByAttributeName(offset int, selectors []string) (int, int) {
+	groupIndex := d.dom.attributeIndex(selectors[1], false)
+	if groupIndex == -1 {
+		return -1, -1
+	}
+
+	for i := offset; i < len(d.dom.attributesGrouped[groupIndex]); i++ {
+		attrIndex := d.dom.attributesGrouped[groupIndex][i]
+		if !d.matchTag(d.attribute(attrIndex).tag, selectors) {
+			continue
+		}
+
+		if len(selectors) < 2 && !d.matchAttributeValue(attrIndex, selectors) {
+			continue
+		}
+		return i, attrIndex
+	}
+
+	return -1, -1
 }

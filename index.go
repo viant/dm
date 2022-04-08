@@ -27,7 +27,8 @@ const (
 )
 
 const (
-	srcAttribute = iota
+	langAttribute = iota
+	srcAttribute
 	altAttribute
 	classAttribute
 	idAttribute
@@ -39,19 +40,21 @@ const (
 )
 
 type index struct {
-	attributeIndex map[string]int
-	tags           map[string]int
+	attributes map[string]int
+	tags       map[string]int
 }
 
 func newIndex() *index {
 	return &index{
-		attributeIndex: map[string]int{},
-		tags:           map[string]int{},
+		attributes: map[string]int{},
+		tags:       map[string]int{},
 	}
 }
 
-func (i *index) tag(tag string, createIfAbsent bool) int {
+func (i *index) tagIndex(tag string, createIfAbsent bool) int {
 	switch tag {
+	case `lang`:
+		return langAttribute
 	case `html`:
 		return htmlTag
 	case `head`:
@@ -112,8 +115,10 @@ func (i *index) tag(tag string, createIfAbsent bool) int {
 	}
 }
 
-func (i *index) attribute(attribute string, createIfAbsent bool) int {
+func (i *index) attributeIndex(attribute string, createIfAbsent bool) int {
 	switch attribute {
+	case `lang`:
+		return langAttribute
 	case `src`:
 		return srcAttribute
 	case `alt`:
@@ -131,7 +136,7 @@ func (i *index) attribute(attribute string, createIfAbsent bool) int {
 	case `height`:
 		return heightAttribute
 	default:
-		attributeIndex, ok := i.attributeIndex[attribute]
+		attributeIndex, ok := i.attributes[attribute]
 		if ok {
 			return attributeIndex
 		}
@@ -141,7 +146,7 @@ func (i *index) attribute(attribute string, createIfAbsent bool) int {
 		}
 
 		attributeIndex = len(i.tags) + lastAttribute
-		i.attributeIndex[attribute] = attributeIndex
+		i.attributes[attribute] = attributeIndex
 		return attributeIndex
 	}
 }

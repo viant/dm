@@ -2,20 +2,22 @@ package dm
 
 type (
 	builder struct {
-		attributes  attrs
-		tags        tags
-		tagIndexes  []int
-		tagCounter  int
-		depth       int
-		tagsGrouped [][]int
+		attributes        attrs
+		tags              tags
+		tagIndexes        []int
+		tagCounter        int
+		depth             int
+		tagsGrouped       [][]int
+		attributesGrouped [][]int
 		*index
 	}
 )
 
 func newBuilder() *builder {
 	builder := &builder{
-		tagsGrouped: make([][]int, lastTag),
-		index:       newIndex(),
+		tagsGrouped:       make([][]int, lastTag),
+		attributesGrouped: make([][]int, lastAttribute),
+		index:             newIndex(),
 	}
 
 	builder.attributes = append(builder.attributes, &attr{
@@ -31,7 +33,15 @@ func newBuilder() *builder {
 	return builder
 }
 
-func (b *builder) attribute(spans [2]span) {
+func (b *builder) attribute(template []byte, spans [2]span) {
+	attributeName := string(template[spans[0].start:spans[0].end])
+	attributeGroup := b.index.attributeIndex(attributeName, true)
+	if attributeGroup < len(b.attributesGrouped) {
+		b.attributesGrouped[attributeGroup] = append(b.attributesGrouped[attributeGroup], len(b.attributes))
+	} else {
+		b.attributesGrouped = append(b.attributesGrouped, []int{len(b.attributes)})
+	}
+
 	b.attributes = append(b.attributes, &attr{
 		tag: b.tagCounter,
 		boundaries: [2]*span{
@@ -60,7 +70,7 @@ func (b *builder) newTag(tagName string, start int, tagSpan span, selfClosing bo
 		index: b.tagCounter + 1,
 	}
 
-	tagGroupPosition := b.index.tag(tagName, true)
+	tagGroupPosition := b.index.tagIndex(tagName, true)
 	if tagGroupPosition >= len(b.tagsGrouped) {
 		b.tagsGrouped = append(b.tagsGrouped, []int{aTag.index})
 	} else {
