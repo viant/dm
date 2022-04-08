@@ -1,17 +1,23 @@
 package dm
 
 type (
-	elementsBuilder struct {
-		attributes attrs
-		tags       tags
-		tagIndexes []int
-		tagCounter int
-		depth      int
+	builder struct {
+		attributes  attrs
+		tags        tags
+		tagIndexes  []int
+		tagCounter  int
+		depth       int
+		tagsGrouped [][]int
+		*index
 	}
 )
 
-func newBuilder() *elementsBuilder {
-	builder := &elementsBuilder{}
+func newBuilder() *builder {
+	builder := &builder{
+		tagsGrouped: make([][]int, lastTag),
+		index:       newIndex(),
+	}
+
 	builder.attributes = append(builder.attributes, &attr{
 		boundaries: [2]*span{{}, {}}, //tag 0 is a sentinel
 		tag:        0,
@@ -25,7 +31,7 @@ func newBuilder() *elementsBuilder {
 	return builder
 }
 
-func (b *elementsBuilder) attribute(spans [2]span) {
+func (b *builder) attribute(spans [2]span) {
 	b.attributes = append(b.attributes, &attr{
 		tag: b.tagCounter,
 		boundaries: [2]*span{
@@ -41,7 +47,7 @@ func (b *elementsBuilder) attribute(spans [2]span) {
 	})
 }
 
-func (b *elementsBuilder) newTag(start int, tagSpan span, selfClosing bool) {
+func (b *builder) newTag(tagName string, start int, tagSpan span, selfClosing bool) {
 	aTag := &tag{
 		depth: b.depth,
 		innerHTML: &span{
@@ -52,6 +58,13 @@ func (b *elementsBuilder) newTag(start int, tagSpan span, selfClosing bool) {
 			end:   tagSpan.end,
 		},
 		index: b.tagCounter + 1,
+	}
+
+	tagGroupPosition := b.index.tag(tagName, true)
+	if tagGroupPosition >= len(b.tagsGrouped) {
+		b.tagsGrouped = append(b.tagsGrouped, []int{aTag.index})
+	} else {
+		b.tagsGrouped[tagGroupPosition] = append(b.tagsGrouped[tagGroupPosition], aTag.index)
 	}
 
 	b.tagCounter++
@@ -65,16 +78,16 @@ func (b *elementsBuilder) newTag(start int, tagSpan span, selfClosing bool) {
 	b.tags = append(b.tags, aTag)
 }
 
-func (b *elementsBuilder) closeTag(end int) {
+func (b *builder) closeTag(end int) {
 	b.depth--
 	b.tags[b.tagIndexes[len(b.tagIndexes)-1]].innerHTML.end = end
 	b.tagIndexes = b.tagIndexes[:len(b.tagIndexes)-1]
 }
 
-func (b *elementsBuilder) attributesBuilt() {
+func (b *builder) attributesBuilt() {
 	b.tags[b.lastTag()].attrEnd = len(b.attributes)
 }
 
-func (b *elementsBuilder) lastTag() int {
+func (b *builder) lastTag() int {
 	return len(b.tags) - 1
 }

@@ -29,7 +29,7 @@ func TestDOM(t *testing.T) {
 	testcases := []struct {
 		description   string
 		uri           string
-		attributes    Filter
+		attributes    *Filter
 		newAttributes []attrSearch
 		innerHTMLGet  []innerHTMLSearch
 		innerHTMLSet  []innerHTMLSearch
@@ -69,6 +69,20 @@ func TestDOM(t *testing.T) {
 `},
 			},
 		},
+		{
+			uri: "template005",
+			newAttributes: []attrSearch{
+				{tag: "img", attribute: "src", oldValue: "[src]", newValue: "newSrc"},
+				{tag: "img", attribute: "alt", oldValue: "alt", newValue: "newAlt"},
+			},
+			innerHTMLGet: []innerHTMLSearch{
+				{tag: "head", value: ``},
+			},
+
+			attributes: NewFilter(
+				NewTagFilter("img", "src"),
+			),
+		},
 	}
 
 	for _, testcase := range testcases {
@@ -105,7 +119,7 @@ func TestDOM(t *testing.T) {
 			}
 
 			tagIt := session.Select(selectors...)
-			for tagIt.HasMore() {
+			for tagIt.Has() {
 				element, _ := tagIt.Next()
 				assertly.AssertValues(t, search.value, element.InnerHTML())
 			}
@@ -122,7 +136,7 @@ func TestDOM(t *testing.T) {
 			}
 
 			selectorIt := session.Select(selectors...)
-			for selectorIt.HasMore() {
+			for selectorIt.Has() {
 				element, _ := selectorIt.Next()
 				_ = element.SetInnerHTML(search.value)
 			}

@@ -21,22 +21,27 @@ type (
 	}
 )
 
-//HasMore returns true if there are more tags matching given selectors
-func (it *ElementIterator) HasMore() bool {
+//Has returns true if there are more tags matching given selectors
+func (it *ElementIterator) Has() bool {
 	if it.current < it.next {
 		return true
 	}
 
-	if it.next == -1 {
+	if it.next == -1 && it.current != -1 {
 		return false
 	}
 
-	it.next = it.template.findMatchingTag(it.current, it.selectors)
+	if it.current == -1 {
+		it.next = it.template.nextMatchingTag(0, it.selectors)
+	} else {
+		it.next = it.template.nextMatchingTag(it.current+1, it.selectors)
+	}
+
 	return it.next != -1
 }
 
 //Next returns Element matching given selectors
-//Note: it is needed to call HasMore before calling Next
+//Note: it is needed to call Has before calling Next
 func (it *ElementIterator) Next() (*Element, error) {
 	if it.current == it.next {
 		return nil, fmt.Errorf("it is needed to call Has, before Next is called")

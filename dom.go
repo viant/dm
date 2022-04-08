@@ -7,22 +7,27 @@ import (
 type (
 	//DOM modifies the VirtualDOM
 	DOM struct {
-		dom               *VirtualDOM
-		buffer            *Buffer
-		attributesOffsets []int
-		innerIncreased    []int
-		skipped           []bool
-		removedTags       map[int]bool
+		dom    *VirtualDOM
+		buffer *Buffer
+		mutations
+	}
+
+	mutations struct {
+		attributesStart []int
+		innerHTMLSize   []int
+		tagsRemoved     []bool
 	}
 )
 
 //DOM creates new DOM
 func (v *VirtualDOM) DOM(options ...Option) *DOM {
 	session := &DOM{
-		dom:               v,
-		attributesOffsets: make([]int, len(v.builder.attributes)),
-		innerIncreased:    make([]int, len(v.builder.tags)),
-		skipped:           make([]bool, len(v.builder.tags)),
+		dom: v,
+		mutations: mutations{
+			attributesStart: make([]int, len(v.attributes)),
+			innerHTMLSize:   make([]int, len(v.tags)),
+			tagsRemoved:     make([]bool, len(v.tags)),
+		},
 	}
 
 	session.apply(options)
@@ -40,8 +45,8 @@ func (d *DOM) Select(selectors ...string) *ElementIterator {
 	return &ElementIterator{
 		iterator: iterator{
 			template:  d,
-			current:   0,
-			next:      0,
+			current:   -1,
+			next:      -1,
 			selectors: selectors,
 		},
 	}
@@ -60,7 +65,7 @@ func (d *DOM) SelectAttributes(selectors ...string) *AttributeIterator {
 }
 
 func (d *DOM) attribute(i int) *attr {
-	return d.dom.builder.attributes[i]
+	return d.dom.attributes[i]
 }
 
 func (d *DOM) setAttributeByIndex(i int, value []byte) {
@@ -68,16 +73,16 @@ func (d *DOM) setAttributeByIndex(i int, value []byte) {
 }
 
 func (d *DOM) updateAttributeValue(i int, newValue []byte) {
-	currOffset := d.buffer.replaceBytes(d.attribute(i).boundaries[1], d.attributesOffsets[i], d.offsetDiff(i), newValue)
-	d.attributesOffsets[i] += currOffset
-	for j := i + 1; j < len(d.dom.builder.attributes); j++ {
-		d.attributesOffsets[j] += currOffset
+	currOffset := d.buffer.replaceBytes(d.attribute(i).boundaries[1], d.attributesStart[i], d.offsetDiff(i), newValue)
+	d.attributesStart[i] += currOffset
+	for j := i + 1; j < len(d.dom.attributes); j++ {
+		d.attributesStart[j] += currOffset
 	}
 }
 
 func (d *DOM) nextAttribute(offset int, selectors ...string) int {
-	for i := offset + 1; i < len(d.dom.builder.attributes); i++ { // d.dom.attributes[0] is a sentinel
-		if !d.matchTag(d.dom.builder.attributes[i].tag, selectors) {
+	for i := offset + 1; i < len(d.dom.attributes); i++ { // d.dom.attributes[0] is a sentinel
+		if !d.matchTag(d.dom.attributes[i].tag, selectors) {
 			continue
 		}
 
@@ -103,33 +108,38 @@ func (d *DOM) innerHTMLByIndex(tagIndex int) []byte {
 	return d.buffer.slice(d.tag(tagIndex).innerHTML, d.tagOffset(tagIndex), d.tagOffset(tagIndex))
 }
 
-func (d *DOM) findMatchingTag(offset int, selectors []string) int {
-	for i := offset + 1; i < len(d.dom.builder.tags); i++ {
-		if !d.matchTag(i, selectors) {
+func (d *DOM) nextMatchingTag(offset int, selectors []string) int {
+	if len(selectors) == 0 {
+		return offset + 1
+	}
+
+	groupIndex := d.dom.index.tag(selectors[0], false)
+	if groupIndex == -1 || len(d.dom.tagsGrouped[groupIndex]) <= offset {
+		return -1
+	}
+
+	tagIndex := d.dom.tagsGrouped[groupIndex][offset]
+	if len(selectors) == 1 {
+		return tagIndex
+	}
+
+	attrStart := d.tag(tagIndex - 1).attrEnd
+	for i := attrStart; i < len(d.dom.attributes); i++ {
+		if !d.matchAttributeName(i, selectors) {
 			continue
 		}
 
-		for j := d.dom.builder.tags[i-1].attrEnd; j < d.dom.builder.tags[i].attrEnd; j++ {
-			if !d.matchAttributeName(j, selectors) {
-				continue
-			}
-
-			if !d.matchAttributeValue(j, selectors) {
-				continue
-			}
-
-			return i
+		if !d.matchAttributeValue(i, selectors) {
+			continue
 		}
 
-		if len(selectors) == 1 {
-			return i
-		}
+		return d.attribute(i).tag
 	}
 	return -1
 }
 
 func (d *DOM) matchTag(i int, selectors []string) bool {
-	if d.skipped[i] {
+	if d.tagsRemoved[i] {
 		return false
 	}
 
@@ -145,23 +155,23 @@ func (d *DOM) Render() string {
 }
 
 func (d *DOM) tag(i int) *tag {
-	return d.dom.builder.tags[i]
+	return d.dom.tags[i]
 }
 
 func (d *DOM) offsetDiff(i int) int {
-	return d.attributesOffsets[i] - d.attributesOffsets[i-1]
+	return d.attributesStart[i] - d.attributesStart[i-1]
 }
 
 func (d *DOM) attrByIndex(i int) *attr {
-	return d.dom.builder.attributes[i]
+	return d.dom.attributes[i]
 }
 
 func (d *DOM) attrOffset(i int) int {
-	return d.attributesOffsets[i]
+	return d.attributesStart[i]
 }
 
 func (d *DOM) tagOffset(i int) int {
-	return d.dom.builder.tags.tagOffset(i, d.attributesOffsets)
+	return d.dom.tags.tagOffset(i, d.attributesStart)
 }
 
 func (d *DOM) setInnerHTMLByIndex(tagIndex int, value []byte) error {
@@ -172,28 +182,28 @@ func (d *DOM) setInnerHTMLByIndex(tagIndex int, value []byte) error {
 }
 
 func (d *DOM) updateInnerHTML(tagIndex int, newInnerHTML []byte) error {
-	diff := d.buffer.replaceBytes(d.tag(tagIndex).innerHTML, d.tagOffset(tagIndex), d.innerIncreased[tagIndex], newInnerHTML)
-	for i := d.tag(tagIndex).attrEnd; i < len(d.attributesOffsets); i++ {
-		d.attributesOffsets[i] += diff
+	diff := d.buffer.replaceBytes(d.tag(tagIndex).innerHTML, d.tagOffset(tagIndex), d.innerHTMLSize[tagIndex], newInnerHTML)
+	for i := d.tag(tagIndex).attrEnd; i < len(d.attributesStart); i++ {
+		d.attributesStart[i] += diff
 	}
 
-	for i := tagIndex + 1; i < len(d.skipped); i++ {
+	for i := tagIndex + 1; i < len(d.tagsRemoved); i++ {
 		if d.tag(tagIndex).depth <= d.tag(i).depth {
 			break
 		}
 
-		d.skipped[i] = true
+		d.tagsRemoved[i] = true
 	}
 	return nil
 }
 
 func (d *DOM) matchAttributeName(i int, selectors []string) bool {
-	if len(selectors) < 1 {
+	if len(selectors) <= 1 {
 		return true
 	}
 
 	return bytes.Equal(
-		d.buffer.slice(d.dom.builder.attributes[i].boundaries[0], d.attributesOffsets[i-1], d.attributesOffsets[i-1]),
+		d.buffer.slice(d.dom.attributes[i].boundaries[0], d.attributesStart[i-1], d.attributesStart[i-1]),
 		asBytes(selectors[1]),
 	)
 }
@@ -203,15 +213,15 @@ func (d *DOM) matchAttributeValue(i int, selectors []string) bool {
 		return true
 	}
 
-	if d.attributesOffsets[i] != d.attributesOffsets[i-1] {
+	if d.attributesStart[i] != d.attributesStart[i-1] {
 		return bytes.Equal(
-			d.buffer.slice(d.attrByIndex(i).boundaries[1], d.attributesOffsets[i-1], d.offsetDiff(i)),
+			d.buffer.slice(d.attrByIndex(i).boundaries[1], d.attributesStart[i-1], d.offsetDiff(i)),
 			asBytes(selectors[2]),
 		)
 	}
 
 	return bytes.Equal(
-		d.buffer.slice(d.attrByIndex(i).boundaries[1], d.attributesOffsets[i], d.attributesOffsets[i]),
+		d.buffer.slice(d.attrByIndex(i).boundaries[1], d.attributesStart[i], d.attributesStart[i]),
 		asBytes(selectors[2]),
 	)
 }
@@ -221,7 +231,7 @@ func (d *DOM) attributeKey(index int) []byte {
 }
 
 func (d *DOM) attributeValue(i int) []byte {
-	return d.buffer.buffer[d.attribute(i).valueStart()+d.attributesOffsets[i-1] : d.attribute(i).valueEnd()+d.attributesOffsets[i]]
+	return d.buffer.buffer[d.attribute(i).valueStart()+d.attributesStart[i-1] : d.attribute(i).valueEnd()+d.attributesStart[i]]
 }
 
 func (d *DOM) apply(options []Option) {
@@ -234,9 +244,9 @@ func (d *DOM) apply(options []Option) {
 }
 
 func (d *DOM) tagLen() int {
-	return len(d.dom.builder.tags)
+	return len(d.dom.tags)
 }
 
 func (d *DOM) tagAttributes(i int) attrs {
-	return d.dom.builder.attributes[d.tag(i-1).attrEnd:d.tag(i).attrEnd]
+	return d.dom.attributes[d.tag(i-1).attrEnd:d.tag(i).attrEnd]
 }

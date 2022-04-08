@@ -11,8 +11,8 @@ type (
 	VirtualDOM struct {
 		template          []byte
 		initialBufferSize int
-		builder           *elementsBuilder
 		filter            *Filter
+		*builder
 	}
 )
 
@@ -35,13 +35,14 @@ func (v *VirtualDOM) AttributesLen() int {
 //New parses template and creates new VirtualDOM. Filter can be specified to index some tags and attributes.
 func New(template string, options ...Option) (*VirtualDOM, error) {
 	domBuilder := newBuilder()
+	templateBytes := []byte(template)
 	d := &VirtualDOM{
-		template: asBytes(template),
+		template: templateBytes,
 		builder:  domBuilder,
 	}
 	d.apply(options)
 
-	if err := d.buildTemplate(asBytes(template)); err != nil {
+	if err := d.buildTemplate(templateBytes); err != nil {
 		return nil, err
 	}
 
@@ -67,36 +68,42 @@ outer:
 			break outer
 
 		case html.StartTagToken, html.SelfClosingTagToken:
+			nodeSpan := dataSpan(node)
+			tagName, _ := node.TagName()
 			if v.filter != nil {
-				tagName, _ := node.TagName()
 				if _, ok := v.filter.tagFilter(string(tagName)); !ok {
 					continue outer
 				}
 			}
 
-			v.builder.newTag(rawSpan(node).end, dataSpan(node), html.SelfClosingTagToken == next)
+			v.builder.newTag(string(tagName), rawSpan(node).end, nodeSpan, html.SelfClosingTagToken == next)
 			if v.filter == nil {
 				buildAllAttributes(node, v.builder)
 			} else {
-				buildFilteredAttributes(template, node, v.builder, v.filter)
+				buildFilteredAttributes(template, tagName, node, v.builder, v.filter)
 			}
 			v.builder.attributesBuilt()
 		case html.EndTagToken:
+			tagName, _ := node.TagName()
+			if v.filter != nil {
+				if _, ok := v.filter.tagFilter(string(tagName)); !ok {
+					continue outer
+				}
+			}
 			v.builder.closeTag(rawSpan(node).start)
 		}
 	}
 	return nil
 }
 
-func buildAllAttributes(z *html.Tokenizer, builder *elementsBuilder) {
+func buildAllAttributes(z *html.Tokenizer, builder *builder) {
 	attributes := attributesSpan(z)
 	for _, attribute := range attributes {
 		builder.attribute(attribute)
 	}
 }
 
-func buildFilteredAttributes(template []byte, z *html.Tokenizer, builder *elementsBuilder, tagFilter *Filter) {
-	tagName, _ := z.TagName()
+func buildFilteredAttributes(template []byte, tagName []byte, z *html.Tokenizer, builder *builder, tagFilter *Filter) {
 	attributeFilter, ok := tagFilter.tagFilter(string(tagName))
 	if !ok {
 		return
