@@ -4,14 +4,14 @@ import "fmt"
 
 type (
 	iterator struct {
-		template  *Template
+		template  *DOM
 		current   int
 		next      int
-		selectors [][]byte
+		selectors []string
 	}
 
-	//TagIterator iterates over matching tags
-	TagIterator struct {
+	//ElementIterator iterates over matching tags
+	ElementIterator struct {
 		iterator
 	}
 
@@ -22,7 +22,7 @@ type (
 )
 
 //HasMore returns true if there are more tags matching given selectors
-func (it *TagIterator) HasMore() bool {
+func (it *ElementIterator) HasMore() bool {
 	if it.current < it.next {
 		return true
 	}
@@ -31,22 +31,15 @@ func (it *TagIterator) HasMore() bool {
 		return false
 	}
 
-	for i := it.current + 1; i < it.template.tagLen(); i++ {
-		if it.template.matchTag(i, it.selectors) {
-			it.next = i
-			return true
-		}
-	}
-
-	it.next = -1
-	return false
+	it.next = it.template.findMatchingTag(it.current, it.selectors)
+	return it.next != -1
 }
 
 //Next returns Element matching given selectors
 //Note: it is needed to call HasMore before calling Next
-func (it *TagIterator) Next() (*Element, error) {
+func (it *ElementIterator) Next() (*Element, error) {
 	if it.current == it.next {
-		return nil, fmt.Errorf("it is needed to call HasMore, before Next is called")
+		return nil, fmt.Errorf("it is needed to call Has, before Next is called")
 	}
 
 	if it.next == -1 {
@@ -63,8 +56,8 @@ func (it *TagIterator) Next() (*Element, error) {
 	}, nil
 }
 
-//HasMore returns true if there are more attributes matching given selectors
-func (at *AttributeIterator) HasMore() bool {
+//Has returns true if there are more attributes matching given selectors
+func (at *AttributeIterator) Has() bool {
 	if at.current < at.next {
 		return true
 	}
@@ -78,20 +71,23 @@ func (at *AttributeIterator) HasMore() bool {
 }
 
 //Next returns Attribute matching given selectors
-//Note: it is needed to call HasMore before calling Next
+//Note: it is needed to call Has before calling Next
 func (at *AttributeIterator) Next() (*Attribute, error) {
 	if at.current == at.next {
-		return nil, fmt.Errorf("it is needed to call HasMore, before Next is called")
+		return nil, fmt.Errorf("it is needed to call Has, before Next is called")
 	}
 
 	if at.next == -1 {
 		return nil, fmt.Errorf("next was called but there are no elements left")
 	}
 
-	at.current = at.next
-	return &Attribute{
+	result := &Attribute{
 		template: at.template,
-		index:    at.current,
+		index:    at.next,
 		parent:   at.template.attribute(at.current).tag,
-	}, nil
+	}
+
+	at.current = at.template.tag(at.template.attribute(at.current).tag).attrEnd
+	at.next = at.current
+	return result, nil
 }

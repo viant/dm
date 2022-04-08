@@ -5,7 +5,7 @@ import "bytes"
 type (
 	//Element represents HTML Element
 	Element struct {
-		template *Template
+		template *DOM
 		tag      *tag
 		attrs    attrs
 
@@ -15,7 +15,7 @@ type (
 
 	//Attribute represents HTML Element attribute
 	Attribute struct {
-		template *Template
+		template *DOM
 		index    int
 
 		parent  int
@@ -24,13 +24,13 @@ type (
 )
 
 //InnerHTML returns InnerHTML of Element
-func (e *Element) InnerHTML() []byte {
-	return e.template.innerHTMLByIndex(e.tag.index)
+func (e *Element) InnerHTML() string {
+	return string(e.template.innerHTMLByIndex(e.tag.index)) //not converting unsafe.Pointers to not make mutable string, if you change source slice, string will also change
 }
 
 //SetInnerHTML updates InnerHTML of Element
-func (e *Element) SetInnerHTML(innerHTML []byte) error {
-	return e.template.setInnerHTMLByIndex(e.index, innerHTML)
+func (e *Element) SetInnerHTML(innerHTML string) error {
+	return e.template.setInnerHTMLByIndex(e.index, asBytes(innerHTML))
 }
 
 //AttributesLen returns number of Element Attributes
@@ -49,9 +49,9 @@ func (e *Element) AttributeByIndex(i int) *Attribute {
 }
 
 //Attribute returns Attribute that matches given Selectors
-func (e *Element) Attribute(attrName, attrValue []byte) (*Attribute, bool) {
+func (e *Element) Attribute(attrName, attrValue string) (*Attribute, bool) {
 	for i := range e.attrs {
-		if bytes.Equal(e.template.attributeKey(e.attributeOffset+i), attrName) && bytes.Equal(e.template.attributeValue(e.attributeOffset+i), attrValue) {
+		if bytes.Equal(e.template.attributeKey(e.attributeOffset+i), asBytes(attrName)) && bytes.Equal(e.template.attributeValue(e.attributeOffset+i), asBytes(attrValue)) {
 			return e.AttributeByIndex(i), true
 		}
 	}
@@ -60,18 +60,18 @@ func (e *Element) Attribute(attrName, attrValue []byte) (*Attribute, bool) {
 }
 
 //Name returns Attribute Key
-func (a *Attribute) Name() []byte {
-	return a.template.attributeKey(a.index)
+func (a *Attribute) Name() string {
+	return string(a.template.attributeKey(a.index)) //not converting unsafe.Pointers to not make mutable string, if you change source slice, string will also change
 }
 
 //Value returns Attribute Value
-func (a *Attribute) Value() []byte {
-	return a.template.attributeValue(a.index)
+func (a *Attribute) Value() string {
+	return string(a.template.attributeValue(a.index)) //not converting unsafe.Pointers to not make mutable string, if you change source slice, string will also change
 }
 
 //Set updates Attribute value
-func (a *Attribute) Set(newValue []byte) {
-	a.template.setAttributeByIndex(a.index, newValue)
+func (a *Attribute) Set(newValue string) {
+	a.template.setAttributeByIndex(a.index, asBytes(newValue))
 }
 
 //Parent returns Attribute parent Element

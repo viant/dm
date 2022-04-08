@@ -3,10 +3,9 @@ package dm
 type (
 	elementsBuilder struct {
 		attributes attrs
-		tags
+		tags       tags
 		tagIndexes []int
 		tagCounter int
-		offset     int
 		depth      int
 	}
 )
@@ -31,12 +30,12 @@ func (b *elementsBuilder) attribute(spans [2]span) {
 		tag: b.tagCounter,
 		boundaries: [2]*span{
 			{
-				start: spans[0].start + b.offset,
-				end:   spans[0].end + b.offset,
+				start: spans[0].start,
+				end:   spans[0].end,
 			},
 			{
-				start: spans[1].start + b.offset,
-				end:   spans[1].end + b.offset,
+				start: spans[1].start,
+				end:   spans[1].end,
 			},
 		},
 	})
@@ -46,18 +45,18 @@ func (b *elementsBuilder) newTag(start int, tagSpan span, selfClosing bool) {
 	aTag := &tag{
 		depth: b.depth,
 		innerHTML: &span{
-			start: start + b.offset,
+			start: start,
 		},
 		tagName: &span{
-			start: tagSpan.start + b.offset,
-			end:   tagSpan.end + b.offset,
+			start: tagSpan.start,
+			end:   tagSpan.end,
 		},
 		index: b.tagCounter + 1,
 	}
 
 	b.tagCounter++
 	if selfClosing {
-		aTag.innerHTML.end = start + b.offset
+		aTag.innerHTML.end = start
 	} else {
 		b.depth++
 		b.tagIndexes = append(b.tagIndexes, b.tagCounter)

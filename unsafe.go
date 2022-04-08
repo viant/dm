@@ -29,3 +29,7 @@ func rawSpan(tokenizer *html.Tokenizer) span {
 func dataSpan(tokenizer *html.Tokenizer) span {
 	return *(*span)(dataField.Pointer(unsafe.Pointer(tokenizer)))
 }
+
+func asBytes(value string) []byte {
+	return *(*[]byte)(unsafe.Pointer(&value))
+}

@@ -1,0 +1,111 @@
+package dm
+
+import (
+	"bytes"
+	"golang.org/x/net/html"
+	"io"
+)
+
+type (
+	//VirtualDOM represents VirtualDOM structure
+	VirtualDOM struct {
+		template          []byte
+		initialBufferSize int
+		builder           *elementsBuilder
+		filter            *Filter
+	}
+)
+
+func (v *VirtualDOM) apply(options []Option) {
+	for _, option := range options {
+		switch actual := option.(type) {
+		case BufferSize:
+			v.initialBufferSize = int(actual)
+		case *Filter:
+			v.filter = actual
+		}
+	}
+}
+
+//AttributesLen returns number of attributes. Attributes[0] is an empty attribute.
+func (v *VirtualDOM) AttributesLen() int {
+	return len(v.builder.attributes)
+}
+
+//New parses template and creates new VirtualDOM. Filter can be specified to index some tags and attributes.
+func New(template string, options ...Option) (*VirtualDOM, error) {
+	domBuilder := newBuilder()
+	d := &VirtualDOM{
+		template: asBytes(template),
+		builder:  domBuilder,
+	}
+	d.apply(options)
+
+	if err := d.buildTemplate(asBytes(template)); err != nil {
+		return nil, err
+	}
+
+	return d, nil
+}
+
+func (v *VirtualDOM) buildTemplate(template []byte) error {
+	node := html.NewTokenizer(bytes.NewReader(template))
+outer:
+	for {
+		next := node.Next()
+		switch next {
+		case html.ErrorToken:
+			err := node.Err()
+			if err == nil {
+				continue
+			}
+
+			if err != io.EOF {
+				return err
+			}
+
+			break outer
+
+		case html.StartTagToken, html.SelfClosingTagToken:
+			if v.filter != nil {
+				tagName, _ := node.TagName()
+				if _, ok := v.filter.tagFilter(string(tagName)); !ok {
+					continue outer
+				}
+			}
+
+			v.builder.newTag(rawSpan(node).end, dataSpan(node), html.SelfClosingTagToken == next)
+			if v.filter == nil {
+				buildAllAttributes(node, v.builder)
+			} else {
+				buildFilteredAttributes(template, node, v.builder, v.filter)
+			}
+			v.builder.attributesBuilt()
+		case html.EndTagToken:
+			v.builder.closeTag(rawSpan(node).start)
+		}
+	}
+	return nil
+}
+
+func buildAllAttributes(z *html.Tokenizer, builder *elementsBuilder) {
+	attributes := attributesSpan(z)
+	for _, attribute := range attributes {
+		builder.attribute(attribute)
+	}
+}
+
+func buildFilteredAttributes(template []byte, z *html.Tokenizer, builder *elementsBuilder, tagFilter *Filter) {
+	tagName, _ := z.TagName()
+	attributeFilter, ok := tagFilter.tagFilter(string(tagName))
+	if !ok {
+		return
+	}
+	attributes := attributesSpan(z)
+	for _, attribute := range attributes {
+		if ok := attributeFilter.matches(string(template[attribute[0].start:attribute[0].end])); !ok {
+			continue
+		}
+		builder.attribute(attribute)
+	}
+}

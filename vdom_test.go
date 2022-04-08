@@ -78,53 +78,53 @@ func TestDOM(t *testing.T) {
 			t.Fail()
 			continue
 		}
-		dom, err := New(template, testcase.attributes)
+		dom, err := New(string(template), testcase.attributes)
 		if !assert.Nil(t, err, testcase.description) {
 			t.Fail()
 			continue
 		}
 
-		session := dom.Template()
+		session := dom.DOM()
 		for _, newAttr := range testcase.newAttributes {
-			attrIterator := session.SelectAttributes([]byte(newAttr.tag), []byte(newAttr.attribute), []byte(newAttr.oldValue))
-			for attrIterator.HasMore() {
+			attrIterator := session.SelectAttributes(newAttr.tag, newAttr.attribute, newAttr.oldValue)
+			for attrIterator.Has() {
 				attr, _ := attrIterator.Next()
-				attr.Set([]byte(newAttr.newValue))
-				assert.Equal(t, newAttr.newValue, string(attr.Value()), testcase.uri)
+				attr.Set(newAttr.newValue)
+				assert.Equal(t, newAttr.newValue, attr.Value(), testcase.uri)
 			}
 		}
 
 		for _, search := range testcase.innerHTMLGet {
-			selectors := make([][]byte, 0)
+			selectors := make([]string, 0)
 			if search.tag != "" {
-				selectors = append(selectors, []byte(search.tag))
+				selectors = append(selectors, search.tag)
 			}
 
 			if search.attribute != "" {
-				selectors = append(selectors, []byte(search.attribute))
+				selectors = append(selectors, search.attribute)
 			}
 
-			tagIt := session.SelectTags(selectors...)
+			tagIt := session.Select(selectors...)
 			for tagIt.HasMore() {
 				element, _ := tagIt.Next()
-				assertly.AssertValues(t, search.value, string(element.InnerHTML()))
+				assertly.AssertValues(t, search.value, element.InnerHTML())
 			}
 		}
 
 		for _, search := range testcase.innerHTMLSet {
-			selectors := make([][]byte, 0)
+			selectors := make([]string, 0)
 			if search.tag != "" {
-				selectors = append(selectors, []byte(search.tag))
+				selectors = append(selectors, search.tag)
 			}
 
 			if search.attribute != "" {
-				selectors = append(selectors, []byte(search.attribute))
+				selectors = append(selectors, search.attribute)
 			}
 
-			selectorIt := session.SelectTags(selectors...)
+			selectorIt := session.Select(selectors...)
 			for selectorIt.HasMore() {
 				element, _ := selectorIt.Next()
-				_ = element.SetInnerHTML([]byte(search.value))
+				_ = element.SetInnerHTML(search.value)
 			}
 		}
 
@@ -133,7 +133,7 @@ func TestDOM(t *testing.T) {
 			t.Fail()
 			continue
 		}
-		bytes := session.Bytes()
+		bytes := session.Render()
 		assertly.AssertValues(t, bytes, result, testcase.uri)
 	}
 }

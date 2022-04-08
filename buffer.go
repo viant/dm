@@ -1,6 +1,6 @@
 package dm
 
-//Buffer hold the current DOM value
+//Buffer hold the current VirtualDOM value
 type Buffer struct {
 	buffer []byte
 	pos    int
@@ -21,12 +21,12 @@ func (b *Buffer) growIfNeeded(grow int) {
 	b.buffer = newBuffer
 }
 
-func (b *Buffer) replaceBytes(span *span, offset int, incraesedSize int, value []byte) int {
-	increased := len(value) - span.end + span.start + incraesedSize
+func (b *Buffer) replaceBytes(span *span, offset int, actualLenDiff int, value []byte) int {
+	increased := len(value) - span.end + span.start - actualLenDiff
 	b.growIfNeeded(increased)
 
 	copy(b.buffer[span.end+offset+increased:], b.buffer[span.end+offset:])
-	copy(b.buffer[span.start+offset+incraesedSize:], value)
+	copy(b.buffer[span.start+offset-actualLenDiff:], value)
 	b.pos += increased
 	return increased
 }
