@@ -28,6 +28,7 @@ func newBuilder() *builder {
 		depth:     -1,
 		innerHTML: &span{},
 		tagName:   &span{},
+		attrEnd:   1,
 	})
 
 	return builder

@@ -1,5 +1,7 @@
 package dm
 
+import "strings"
+
 type (
 	//Filter represents tag indexing filters
 	Filter struct {
@@ -28,6 +30,8 @@ func (f *Filter) Init() {
 }
 
 func (f *Filter) tagFilter(tagName string) (*TagFilter, bool) {
+	tagName = strings.ToLower(tagName)
+
 	if f.index != nil {
 		tagFilterIndex, ok := f.index[tagName]
 		if ok == false {
@@ -58,9 +62,14 @@ func NewFilter(filters ...*TagFilter) *Filter {
 
 //NewTagFilter creates new TagFilter against specified attributes and tag name
 func NewTagFilter(tag string, attributes ...string) *TagFilter {
+	newAttributes := make([]string, len(attributes))
+	for i, attribute := range attributes {
+		newAttributes[i] = strings.ToLower(attribute)
+	}
+
 	tagFilter := &TagFilter{
 		Name:       tag,
-		Attributes: attributes,
+		Attributes: newAttributes,
 		index:      nil,
 	}
 
@@ -82,6 +91,8 @@ func (f *TagFilter) Init() {
 }
 
 func (f *TagFilter) matches(attributeName string) bool {
+	attributeName = strings.ToLower(attributeName)
+
 	if f.index != nil {
 		_, ok := f.index[attributeName]
 		return ok

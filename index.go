@@ -1,5 +1,7 @@
 package dm
 
+import "strings"
+
 const (
 	htmlTag = iota
 	headTag
@@ -116,6 +118,8 @@ func (i *index) tagIndex(tag string, createIfAbsent bool) int {
 }
 
 func (i *index) attributeIndex(attribute string, createIfAbsent bool) int {
+	attribute = strings.ToLower(attribute)
+
 	switch attribute {
 	case `lang`:
 		return langAttribute
