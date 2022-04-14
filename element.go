@@ -50,7 +50,7 @@ func (e *Element) AttributeByIndex(i int) *Attribute {
 
 func (e *Element) HasAttribute(name string) bool {
 	for i := range e.attrs {
-		if bytes.Equal(e.template.attributeKey(e.attributeOffset+i), asBytes(name)) {
+		if bytes.EqualFold(e.template.attributeKey(e.attributeOffset+i), asBytes(name)) {
 			return true
 		}
 	}
@@ -60,7 +60,7 @@ func (e *Element) HasAttribute(name string) bool {
 //Attribute returns matched attribute, true or nil, false
 func (e *Element) Attribute(name string) (*Attribute, bool) {
 	for i := range e.attrs {
-		if bytes.Equal(e.template.attributeKey(e.attributeOffset+i), asBytes(name)) {
+		if bytes.EqualFold(e.template.attributeKey(e.attributeOffset+i), asBytes(name)) {
 			return e.AttributeByIndex(i), true
 		}
 	}
@@ -70,7 +70,7 @@ func (e *Element) Attribute(name string) (*Attribute, bool) {
 //MatchAttribute returns an attribute that matches the supplied attribute name and value
 func (e *Element) MatchAttribute(name, value string) (*Attribute, bool) {
 	for i := range e.attrs {
-		if bytes.Equal(e.template.attributeKey(e.attributeOffset+i), asBytes(name)) && bytes.Equal(e.template.attributeValue(e.attributeOffset+i), asBytes(value)) {
+		if bytes.EqualFold(e.template.attributeKey(e.attributeOffset+i), asBytes(name)) && bytes.EqualFold(e.template.attributeValue(e.attributeOffset+i), asBytes(value)) {
 			return e.AttributeByIndex(i), true
 		}
 	}

@@ -1,8 +1,9 @@
-package dm
+package dm_test
 
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/assertly"
+	"github.com/viant/dm"
 	"github.com/viant/toolbox"
 	"os"
 	"path"
@@ -29,7 +30,7 @@ func TestDOM(t *testing.T) {
 	testcases := []struct {
 		description   string
 		uri           string
-		attributes    *Filter
+		attributes    *dm.Filter
 		newAttributes []attrSearch
 		innerHTMLGet  []innerHTMLSearch
 		innerHTMLSet  []innerHTMLSearch
@@ -79,8 +80,8 @@ func TestDOM(t *testing.T) {
 				{tag: "head", value: ``},
 			},
 
-			attributes: NewFilter(
-				NewTagFilter("img", "src"),
+			attributes: dm.NewFilter(
+				dm.NewTagFilter("img", "src"),
 			),
 		},
 	}
@@ -92,7 +93,7 @@ func TestDOM(t *testing.T) {
 			t.Fail()
 			continue
 		}
-		dom, err := New(string(template), testcase.attributes)
+		dom, err := dm.New(string(template), testcase.attributes)
 		if !assert.Nil(t, err, testcase.description) {
 			t.Fail()
 			continue
@@ -150,4 +151,51 @@ func TestDOM(t *testing.T) {
 		bytes := session.Render()
 		assertly.AssertValues(t, bytes, result, testcase.uri)
 	}
+}
+
+var vdom *dm.VirtualDOM
+
+func init() {
+	var err error
+	vdom, err = dm.New(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<img src="abc.jpg" alt="some img"/>
+<img src="abc.jpg" alt="some img"/>
+<img src="abc.jpg" alt="some img"/>
+<iframe></iframe>
+</body>
+</html>`, dm.NewFilter(
+		dm.NewTagFilter("img", "src"),
+		dm.NewTagFilter("iframe"),
+	))
+
+	if err != nil {
+		panic(err)
+	}
+}
+func BenchmarkVirtualDOM_DOM(b *testing.B) {
+	var result string
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		dom := vdom.DOM()
+		imgSrcIt := dom.SelectAttributes("img", "src")
+		for imgSrcIt.Has() {
+			attribute, _ := imgSrcIt.Next()
+			attribute.Set("newSrc")
+		}
+
+		iframeIt := dom.Select("iframe")
+		for iframeIt.Has() {
+			iframe, _ := iframeIt.Next()
+			_ = iframe.SetInnerHTML("this is new inner")
+		}
+		result = dom.Render()
+	}
+
+	assert.Equal(b, "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <title>Title</title>\n</head>\n<body>\n<img src=\"newSrc\" alt=\"some img\"/>\n<img src=\"newSrc\" alt=\"some img\"/>\n<img src=\"newSrc\" alt=\"some img\"/>\n<iframe>this is new inner</iframe>\n</body>\n</html>", result)
 }

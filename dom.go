@@ -152,7 +152,7 @@ func (d *DOM) matchTag(i int, selectors []string) bool {
 		return false
 	}
 
-	return len(selectors) == 0 || bytes.Equal(
+	return len(selectors) == 0 || bytes.EqualFold(
 		d.buffer.slice(d.tag(i).tagName, d.tagOffset(i-1), d.tagOffset(i-1)),
 		asBytes(selectors[0]),
 	)
@@ -211,7 +211,7 @@ func (d *DOM) matchAttributeName(i int, selectors []string) bool {
 		return true
 	}
 
-	return bytes.Equal(
+	return bytes.EqualFold(
 		d.buffer.slice(d.dom.attributes[i].boundaries[0], d.attributesStart[i-1], d.attributesStart[i-1]),
 		asBytes(selectors[1]),
 	)
@@ -223,13 +223,13 @@ func (d *DOM) matchAttributeValue(i int, selectors []string) bool {
 	}
 
 	if d.attributesStart[i] != d.attributesStart[i-1] {
-		return bytes.Equal(
+		return bytes.EqualFold(
 			d.buffer.slice(d.attrByIndex(i).boundaries[1], d.attributesStart[i-1], d.offsetDiff(i)),
 			asBytes(selectors[2]),
 		)
 	}
 
-	return bytes.Equal(
+	return bytes.EqualFold(
 		d.buffer.slice(d.attrByIndex(i).boundaries[1], d.attributesStart[i], d.attributesStart[i]),
 		asBytes(selectors[2]),
 	)
