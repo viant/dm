@@ -35,7 +35,7 @@ func ExampleNew() {
 		elem, _ := elemIt.Next()
 		fmt.Println(elem.InnerHTML())
 		_ = elem.SetInnerHTML("This will be new InnerHTML")
-		attribute, ok := elem.Attribute("hidden", "[hidden]")
+		attribute, ok := elem.MatchAttribute("hidden", "[hidden]")
 		if ok {
 			attribute.Set("true")
 			fmt.Println(attribute.Value())

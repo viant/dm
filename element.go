@@ -48,14 +48,32 @@ func (e *Element) AttributeByIndex(i int) *Attribute {
 	}
 }
 
-//Attribute returns Attribute that matches given Selectors
-func (e *Element) Attribute(attrName, attrValue string) (*Attribute, bool) {
+func (e *Element) HasAttribute(name string) bool {
 	for i := range e.attrs {
-		if bytes.Equal(e.template.attributeKey(e.attributeOffset+i), asBytes(attrName)) && bytes.Equal(e.template.attributeValue(e.attributeOffset+i), asBytes(attrValue)) {
+		if bytes.Equal(e.template.attributeKey(e.attributeOffset+i), asBytes(name)) {
+			return true
+		}
+	}
+	return false
+}
+
+//Attribute returns matched attribute, true or nil, false
+func (e *Element) Attribute(name string) (*Attribute, bool) {
+	for i := range e.attrs {
+		if bytes.Equal(e.template.attributeKey(e.attributeOffset+i), asBytes(name)) {
 			return e.AttributeByIndex(i), true
 		}
 	}
+	return nil, false
+}
 
+//MatchAttribute returns an attribute that matches the supplied attribute name and value
+func (e *Element) MatchAttribute(name, value string) (*Attribute, bool) {
+	for i := range e.attrs {
+		if bytes.Equal(e.template.attributeKey(e.attributeOffset+i), asBytes(name)) && bytes.Equal(e.template.attributeValue(e.attributeOffset+i), asBytes(value)) {
+			return e.AttributeByIndex(i), true
+		}
+	}
 	return nil, false
 }
 
