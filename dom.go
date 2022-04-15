@@ -49,6 +49,7 @@ func (d *DOM) Select(selectors ...string) *ElementIterator {
 			next:      -1,
 			selectors: selectors,
 		},
+		index: -1,
 	}
 }
 
@@ -61,6 +62,7 @@ func (d *DOM) SelectAttributes(selectors ...string) *AttributeIterator {
 			next:      -1,
 			selectors: selectors,
 		},
+		index: -1,
 	}
 }
 
@@ -135,7 +137,7 @@ func (d *DOM) nextMatchingTag(offset int, selectors []string) (int, int) {
 		}
 
 		if len(selectors) == 1 {
-			return i, offset + i - tagIndex + 1
+			return i, offset + i - tagIndex
 		}
 
 		for j := d.tag(i - 1).attrEnd; j < d.tag(i).attrEnd; j++ {
@@ -147,7 +149,7 @@ func (d *DOM) nextMatchingTag(offset int, selectors []string) (int, int) {
 				continue
 			}
 
-			return i, offset + i - tagIndex + 1
+			return i, offset + i - tagIndex
 		}
 	}
 	return -1, -1
@@ -303,7 +305,7 @@ func (d *DOM) addAttribute(tagIndex int, key string, value string) {
 	offset += copy(newAttribute[offset:], value)
 	offset += copy(newAttribute[offset:], `"`)
 
-	end := d.tag(tagIndex - 1).attrEnd
+	end := d.tag(tagIndex).attrEnd - 1
 	d.buffer.insertAfter(d.attribute(end).valueEnd()+1, d.attrOffset(end), newAttribute)
 
 	for i := end; i < len(d.dom.attributes); i++ {

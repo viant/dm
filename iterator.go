@@ -33,11 +33,7 @@ func (it *ElementIterator) Has() bool {
 		return false
 	}
 
-	if it.current == -1 {
-		it.next, it.index = it.template.nextMatchingTag(0, it.selectors)
-	} else {
-		it.next, it.index = it.template.nextMatchingTag(it.index, it.selectors)
-	}
+	it.next, it.index = it.template.nextMatchingTag(it.index+1, it.selectors)
 
 	return it.next != -1
 }
@@ -74,6 +70,7 @@ func (at *AttributeIterator) Has() bool {
 	}
 
 	at.next, at.index = at.template.nextAttribute(at.current+1, at.selectors...)
+
 	return at.next != -1
 }
 
