@@ -30,7 +30,7 @@ func TestDOM(t *testing.T) {
 	testcases := []struct {
 		description   string
 		uri           string
-		attributes    *dm.Filter
+		attributes    *dm.Filters
 		newAttributes []attrSearch
 		innerHTMLGet  []innerHTMLSearch
 		innerHTMLSet  []innerHTMLSearch
@@ -80,12 +80,23 @@ func TestDOM(t *testing.T) {
 				{tag: "head", value: ``},
 			},
 
-			attributes: dm.NewFilter(
-				dm.NewTagFilter("img", "src"),
+			attributes: dm.NewFilters(
+				dm.NewFilter("img", "src"),
+			),
+		},
+		{
+			uri: "template008",
+			innerHTMLGet: []innerHTMLSearch{
+				{tag: "script", value: ``},
+			},
+
+			attributes: dm.NewFilters(
+				dm.NewFilter("script"),
 			),
 		},
 	}
 
+	//for _, testcase := range testcases[len(testcases)-1:] {
 	for _, testcase := range testcases {
 		templatePath := path.Join(testLocation, "testdata", testcase.uri)
 		dom, err := readFromFile(path.Join(templatePath, "index.html"), testcase.attributes)
@@ -218,9 +229,9 @@ func init() {
 <img src="abc.jpg" alt="some img"/>
 <iframe></iframe>
 </body>
-</html>`, dm.NewFilter(
-		dm.NewTagFilter("img", "src"),
-		dm.NewTagFilter("iframe"),
+</html>`, dm.NewFilters(
+		dm.NewFilter("img", "src"),
+		dm.NewFilter("iframe"),
 	))
 
 	if err != nil {

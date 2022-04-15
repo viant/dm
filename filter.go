@@ -3,22 +3,22 @@ package dm
 import "strings"
 
 type (
-	//Filter represents tag indexing filters
-	Filter struct {
-		Tags  []*TagFilter
+	//Filters represents tag indexing filters
+	Filters struct {
+		Tags  []*Filter
 		index map[string]int
 	}
 
-	//TagFilter represents single tag filter
-	TagFilter struct {
+	//Filter represents single tag filter
+	Filter struct {
 		Name       string
 		Attributes []string
 		index      map[string]int
 	}
 )
 
-//Init initializes Filter
-func (f *Filter) Init() {
+//Init initializes Filters
+func (f *Filters) Init() {
 	if len(f.Tags) < 5 {
 		return
 	}
@@ -29,7 +29,7 @@ func (f *Filter) Init() {
 	}
 }
 
-func (f *Filter) tagFilter(tagName string) (*TagFilter, bool) {
+func (f *Filters) tagFilter(tagName string) (*Filter, bool) {
 	tagName = strings.ToLower(tagName)
 
 	if f.index != nil {
@@ -50,9 +50,9 @@ func (f *Filter) tagFilter(tagName string) (*TagFilter, bool) {
 	return nil, false
 }
 
-//NewFilter creates Filter with given TagFilters
-func NewFilter(filters ...*TagFilter) *Filter {
-	filter := &Filter{
+//NewFilters creates Filters with given TagFilters
+func NewFilters(filters ...*Filter) *Filters {
+	filter := &Filters{
 		Tags: filters,
 	}
 
@@ -60,14 +60,14 @@ func NewFilter(filters ...*TagFilter) *Filter {
 	return filter
 }
 
-//NewTagFilter creates new TagFilter against specified attributes and tag name
-func NewTagFilter(tag string, attributes ...string) *TagFilter {
+//NewFilter creates new Filter against specified attributes and tag name
+func NewFilter(tag string, attributes ...string) *Filter {
 	newAttributes := make([]string, len(attributes))
 	for i, attribute := range attributes {
 		newAttributes[i] = strings.ToLower(attribute)
 	}
 
-	tagFilter := &TagFilter{
+	tagFilter := &Filter{
 		Name:       tag,
 		Attributes: newAttributes,
 		index:      nil,
@@ -77,8 +77,8 @@ func NewTagFilter(tag string, attributes ...string) *TagFilter {
 	return tagFilter
 }
 
-//Init initializes TagFilter
-func (f *TagFilter) Init() {
+//Init initializes Filter
+func (f *Filter) Init() {
 	if len(f.Attributes) < 5 {
 		return
 	}
@@ -90,7 +90,7 @@ func (f *TagFilter) Init() {
 	}
 }
 
-func (f *TagFilter) matches(attributeName string) bool {
+func (f *Filter) matches(attributeName string) bool {
 	attributeName = strings.ToLower(attributeName)
 
 	if f.index != nil {

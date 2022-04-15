@@ -11,7 +11,7 @@ type (
 	VirtualDOM struct {
 		template          []byte
 		initialBufferSize int
-		filter            *Filter
+		filter            *Filters
 		*builder
 	}
 )
@@ -21,7 +21,7 @@ func (v *VirtualDOM) apply(options []Option) {
 		switch actual := option.(type) {
 		case BufferSize:
 			v.initialBufferSize = int(actual)
-		case *Filter:
+		case *Filters:
 			v.filter = actual
 		}
 	}
@@ -32,7 +32,7 @@ func (v *VirtualDOM) AttributesLen() int {
 	return len(v.builder.attributes)
 }
 
-//New parses template and creates new VirtualDOM. Filter can be specified to index some tags and attributes.
+//New parses template and creates new VirtualDOM. Filters can be specified to index some tags and attributes.
 func New(template string, options ...Option) (*VirtualDOM, error) {
 	domBuilder := newBuilder()
 	templateBytes := []byte(template)
@@ -103,7 +103,7 @@ func buildAllAttributes(template []byte, z *html.Tokenizer, builder *builder) {
 	}
 }
 
-func buildFilteredAttributes(template []byte, tagName []byte, z *html.Tokenizer, builder *builder, tagFilter *Filter) {
+func buildFilteredAttributes(template []byte, tagName []byte, z *html.Tokenizer, builder *builder, tagFilter *Filters) {
 	attributeFilter, ok := tagFilter.tagFilter(string(tagName))
 	if !ok {
 		return

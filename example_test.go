@@ -22,9 +22,9 @@ func ExampleNew() {
 		return
 	}
 
-	filter := NewFilter(
-		NewTagFilter("div", "hidden"),
-		NewTagFilter("img", "src"),
+	filter := NewFilters(
+		NewFilter("div", "hidden"),
+		NewFilter("img", "src"),
 	)
 
 	bufferSize := BufferSize(1024)

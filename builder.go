@@ -1,5 +1,7 @@
 package dm
 
+import "strings"
+
 type (
 	builder struct {
 		attributes        attrs
@@ -71,6 +73,10 @@ func (b *builder) newTag(tagName string, start int, tagSpan span, selfClosing bo
 		index: b.tagCounter + 1,
 	}
 
+	if strings.EqualFold(tagName, "script") {
+		aTag.innerHTML.end = start
+	}
+
 	tagGroupPosition := b.index.tagIndex(tagName, true)
 	if tagGroupPosition >= len(b.tagsGrouped) {
 		b.tagsGrouped = append(b.tagsGrouped, []int{aTag.index})
@@ -91,7 +97,12 @@ func (b *builder) newTag(tagName string, start int, tagSpan span, selfClosing bo
 
 func (b *builder) closeTag(end int) {
 	b.depth--
-	b.tags[b.tagIndexes[len(b.tagIndexes)-1]].innerHTML.end = end
+
+	lastTag := b.tags[b.tagIndexes[len(b.tagIndexes)-1]]
+	if lastTag.innerHTML.end == 0 {
+		lastTag.innerHTML.end = end
+	}
+
 	b.tagIndexes = b.tagIndexes[:len(b.tagIndexes)-1]
 }
 
