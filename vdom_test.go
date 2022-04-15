@@ -88,12 +88,7 @@ func TestDOM(t *testing.T) {
 
 	for _, testcase := range testcases {
 		templatePath := path.Join(testLocation, "testdata", testcase.uri)
-		template, err := os.ReadFile(path.Join(templatePath, "index.html"))
-		if !assert.Nil(t, err, testcase.description) {
-			t.Fail()
-			continue
-		}
-		dom, err := dm.New(string(template), testcase.attributes)
+		dom, err := readFromFile(path.Join(templatePath, "index.html"), testcase.attributes)
 		if !assert.Nil(t, err, testcase.description) {
 			t.Fail()
 			continue
@@ -153,6 +148,60 @@ func TestDOM(t *testing.T) {
 	}
 }
 
+func TestDOM_Element_NewAttribute(t *testing.T) {
+	templatePath := path.Join(toolbox.CallerDirectory(3), "testdata", "template007")
+	vdom, err := readFromFile(path.Join(templatePath, "index.html"))
+	if !assert.Nil(t, err) {
+		return
+	}
+
+	dom := vdom.DOM()
+	tagIt := dom.Select("p", "class", "p-100")
+	for tagIt.Has() {
+		aTag, _ := tagIt.Next()
+		aTag.AddAttribute("id", "first-paragraph")
+	}
+
+	attrIt := dom.SelectAttributes("img", "src")
+	for attrIt.Has() {
+		attribute, _ := attrIt.Next()
+		attribute.Set("some-img.jpg")
+	}
+
+	tagIt = dom.Select("div")
+	for tagIt.Has() {
+		aTag, _ := tagIt.Next()
+		_ = aTag.SetInnerHTML("New inner html")
+	}
+
+	tagIt = dom.Select("p", "class", "p-small")
+	for tagIt.Has() {
+		aTag, _ := tagIt.Next()
+		aTag.AddAttribute("id", "second-paragraph")
+	}
+
+	render := dom.Render()
+	result, err := os.ReadFile(path.Join(templatePath, "expect.html"))
+	if !assert.Nil(t, err) {
+		return
+	}
+	assertly.AssertValues(t, string(result), render)
+}
+
+func readFromFile(path string, options ...dm.Option) (*dm.VirtualDOM, error) {
+	template, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	dom, err := dm.New(string(template), options...)
+	if err != nil {
+		return nil, err
+	}
+	return dom, nil
+}
+
+//Benchmarks
 var vdom *dm.VirtualDOM
 
 func init() {

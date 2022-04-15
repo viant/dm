@@ -13,6 +13,7 @@ type (
 	//ElementIterator iterates over matching tags
 	ElementIterator struct {
 		iterator
+		index int
 	}
 
 	//AttributeIterator iterates over matching attributes
@@ -33,9 +34,9 @@ func (it *ElementIterator) Has() bool {
 	}
 
 	if it.current == -1 {
-		it.next = it.template.nextMatchingTag(0, it.selectors)
+		it.next, it.index = it.template.nextMatchingTag(0, it.selectors)
 	} else {
-		it.next = it.template.nextMatchingTag(it.current+1, it.selectors)
+		it.next, it.index = it.template.nextMatchingTag(it.index, it.selectors)
 	}
 
 	return it.next != -1
@@ -72,11 +73,7 @@ func (at *AttributeIterator) Has() bool {
 		return false
 	}
 
-	if at.current == -1 {
-		at.next, at.index = at.template.nextAttribute(0, at.selectors...)
-	} else {
-		at.next, at.index = at.template.nextAttribute(at.current+1, at.selectors...)
-	}
+	at.next, at.index = at.template.nextAttribute(at.current+1, at.selectors...)
 	return at.next != -1
 }
 

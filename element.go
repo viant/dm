@@ -77,6 +77,10 @@ func (e *Element) MatchAttribute(name, value string) (*Attribute, bool) {
 	return nil, false
 }
 
+func (e *Element) AddAttribute(key, value string) {
+	e.template.addAttribute(e.index, key, value)
+}
+
 //Name returns Attribute Key
 func (a *Attribute) Name() string {
 	return string(a.template.attributeKey(a.index)) //not converting unsafe.Pointers to not make mutable string, if you change source slice, string will also change

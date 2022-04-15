@@ -31,5 +31,5 @@ func dataSpan(tokenizer *html.Tokenizer) span {
 }
 
 func asBytes(value string) []byte {
-	return *(*[]byte)(unsafe.Pointer(&value))
+	return []byte(value)
 }
