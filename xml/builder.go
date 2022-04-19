@@ -9,26 +9,31 @@ type builder struct {
 	root         *StartElement
 	elements     []*StartElement
 	indexesStack []int
-	counter      int
+
+	attributeCounter int
 }
 
 func (b *builder) addElement(actual xml.StartElement, valueStart int, raw []byte, offset int) error {
-	attributes, err := extractAttributes(offset, raw)
+	attributesSpan, err := extractAttributes(offset, raw)
 	if err != nil {
 		return err
 	}
 
-	element := NewStartElement(&actual, b.vxml, b.counter, valueStart, attributes)
+	attributes := make([]*attribute, len(attributesSpan))
+	for i := range attributesSpan {
+		attributes[i] = newAttribute(attributesSpan[i], b.attributeCounter)
+		b.attributeCounter++
+	}
+
+	element := NewStartElement(&actual, b.vxml, len(b.elements), valueStart, attributes)
 	b.addStartElement(element)
 	return nil
 }
 
 func (b *builder) addStartElement(element *StartElement) {
 	b.appendElementIfNeeded(element)
+	b.indexesStack = append(b.indexesStack, len(b.elements))
 	b.elements = append(b.elements, element)
-	b.indexesStack = append(b.indexesStack, b.counter)
-
-	b.counter++
 }
 
 func (b *builder) appendElementIfNeeded(element *StartElement) {
@@ -55,7 +60,7 @@ func (b *builder) addCharData(offset int) {
 }
 
 func newBuilder(vxml *VirtualXml) *builder {
-	element := NewStartElement(nil, vxml, 0, 0, [][2]span{})
+	element := NewStartElement(nil, vxml, 0, 0, []*attribute{})
 	b := &builder{
 		root: element,
 		vxml: vxml,

@@ -14,7 +14,7 @@ func (m *matcher) updateIndex() {
 		m.indexes[m.index]++
 	}
 
-	m.updateTrail()
+	m.updateIndexes()
 }
 
 func (m *matcher) match() int {
@@ -38,9 +38,9 @@ func (m *matcher) match() int {
 }
 
 func (m *matcher) matchAny() (*StartElement, bool) {
-	for ; m.indexes[m.index] < len(m.currRoot.children); m.indexes[m.index]++ {
-		switch actual := m.selectors[m.index].(type) {
-		case ElementSelector:
+	switch actual := m.selectors[m.index].(type) {
+	case ElementSelector:
+		for ; m.indexes[m.index] < len(m.currRoot.children); m.indexes[m.index]++ {
 			if element := m.currRoot.children[m.indexes[m.index]]; element.Name.Local == string(actual) {
 				return element, true
 			}
@@ -50,7 +50,7 @@ func (m *matcher) matchAny() (*StartElement, bool) {
 	return nil, false
 }
 
-func (m *matcher) updateTrail() {
+func (m *matcher) updateIndexes() {
 	for !(m.indexes[m.index] < len(m.currRoot.children)-1) && !(m.index == 0) {
 		m.indexes[m.index] = 0
 		m.index--

@@ -7,9 +7,14 @@ type Attribute struct {
 }
 
 func (a *Attribute) Value() string {
-	return a.element.startElement.Attr[a.index].Value
+	value, ok := a.xml.mutations.value(a.index)
+	if ok {
+		return value
+	} else {
+		return a.element.startElement.Attr[a.index].Value
+	}
 }
 
 func (a *Attribute) Set(value string) {
-	//a.xml.
+	a.xml.mutations.update(a.index, value)
 }

@@ -3,6 +3,11 @@ package xml
 import "encoding/xml"
 
 type (
+	attribute struct {
+		spans [2]span
+		index int
+	}
+
 	StartElement struct {
 		*xml.StartElement
 		span
@@ -15,9 +20,25 @@ type (
 
 		attributeIndex map[string]int
 		attributesName []string
-		attributes     [][2]span
+		attributes     []*attribute
 	}
 )
+
+func (a *attribute) valueStart() int {
+	return a.spans[1].start
+}
+
+func (a *attribute) valueEnd() int {
+	return a.spans[1].end
+}
+
+func (a *attribute) keyStart() int {
+	return a.spans[0].start
+}
+
+func (a *attribute) keyEnd() int {
+	return a.spans[0].end
+}
 
 func (s *StartElement) Append(child *StartElement) {
 	child.parentIndex = len(s.children)
@@ -40,7 +61,7 @@ func (s *StartElement) attrByName(attribute string) (int, bool) {
 	return -1, false
 }
 
-func NewStartElement(element *xml.StartElement, virtualXml *VirtualXml, elemIndex int, startPosition int, attributes [][2]span) *StartElement {
+func NewStartElement(element *xml.StartElement, virtualXml *VirtualXml, elemIndex int, startPosition int, attributes []*attribute) *StartElement {
 	elem := &StartElement{
 		StartElement: element,
 		elemIndex:    elemIndex,
@@ -63,7 +84,7 @@ func (s *StartElement) init() {
 	s.attributesName = make([]string, len(s.Attr))
 
 	for i, attr := range s.attributes {
-		attributeName := string(s.vxml.template[attr[0].start:attr[0].end])
+		attributeName := string(s.vxml.template[attr.keyStart():attr.keyEnd()])
 		s.attributesName[i] = attributeName
 	}
 
@@ -72,5 +93,12 @@ func (s *StartElement) init() {
 		for i, attr := range s.attributesName {
 			s.attributeIndex[attr] = i
 		}
+	}
+}
+
+func newAttribute(spans [2]span, counter int) *attribute {
+	return &attribute{
+		spans: spans,
+		index: counter,
 	}
 }

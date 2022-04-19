@@ -79,8 +79,8 @@ func TestNew(t *testing.T) {
 		},
 	}
 
-	//for _, testcase := range testcases[:len(testcases)-1] {
-	for _, testcase := range testcases[2:3] {
+	//for _, testcase := range testcases[len(testcases)-1:] {
+	for _, testcase := range testcases {
 		templatePath := path.Join(testLocation, "testdata", testcase.uri)
 		vxml, err := readFromFile(path.Join(templatePath, "index.xml"))
 		if !assert.Nil(t, err, testcase.description) {
@@ -124,6 +124,8 @@ func TestNew(t *testing.T) {
 				attribute, ok := element.Attribute(search.attribute)
 				assert.True(t, ok, testcase.description)
 				attribute.Set(search.newValues[counter])
+				assert.Equal(t, attribute.Value(), search.newValues[counter], testcase.description)
+				counter++
 			}
 
 			assert.Equal(t, counter, len(search.newValues), testcase.description)
