@@ -6,7 +6,7 @@ type (
 	builder struct {
 		attributes        attrs
 		tags              tags
-		tagIndexes        []int
+		indexesStack      []int
 		tagCounter        int
 		depth             int
 		tagsGrouped       [][]int
@@ -89,7 +89,7 @@ func (b *builder) newTag(tagName string, start int, tagSpan span, selfClosing bo
 		aTag.innerHTML.end = start
 	} else {
 		b.depth++
-		b.tagIndexes = append(b.tagIndexes, b.tagCounter)
+		b.indexesStack = append(b.indexesStack, b.tagCounter)
 	}
 
 	b.tags = append(b.tags, aTag)
@@ -98,12 +98,12 @@ func (b *builder) newTag(tagName string, start int, tagSpan span, selfClosing bo
 func (b *builder) closeTag(end int) {
 	b.depth--
 
-	lastTag := b.tags[b.tagIndexes[len(b.tagIndexes)-1]]
+	lastTag := b.tags[b.indexesStack[len(b.indexesStack)-1]]
 	if lastTag.innerHTML.end == 0 {
 		lastTag.innerHTML.end = end
 	}
 
-	b.tagIndexes = b.tagIndexes[:len(b.tagIndexes)-1]
+	b.indexesStack = b.indexesStack[:len(b.indexesStack)-1]
 }
 
 func (b *builder) attributesBuilt() {

@@ -55,8 +55,6 @@ func newIndex() *index {
 
 func (i *index) tagIndex(tag string, createIfAbsent bool) int {
 	switch tag {
-	case `lang`:
-		return langAttribute
 	case `html`:
 		return htmlTag
 	case `head`:
