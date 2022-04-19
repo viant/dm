@@ -5,15 +5,22 @@ import (
 )
 
 type builder struct {
+	vxml         *VirtualXml
 	root         *StartElement
 	elements     []*StartElement
 	indexesStack []int
 	counter      int
 }
 
-func (b *builder) addElement(actual xml.StartElement, offset int) {
-	element := NewStartElement(&actual, b.counter, offset)
+func (b *builder) addElement(actual xml.StartElement, valueStart int, raw []byte, offset int) error {
+	attributes, err := extractAttributes(offset, raw)
+	if err != nil {
+		return err
+	}
+
+	element := NewStartElement(&actual, b.vxml, b.counter, valueStart, attributes)
 	b.addStartElement(element)
+	return nil
 }
 
 func (b *builder) addStartElement(element *StartElement) {
@@ -47,10 +54,11 @@ func (b *builder) addCharData(offset int) {
 	}
 }
 
-func newBuilder() *builder {
-	element := NewStartElement(nil, 0, 0)
+func newBuilder(vxml *VirtualXml) *builder {
+	element := NewStartElement(nil, vxml, 0, 0, [][2]span{})
 	b := &builder{
 		root: element,
+		vxml: vxml,
 	}
 
 	b.addStartElement(element)

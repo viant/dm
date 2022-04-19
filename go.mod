@@ -10,6 +10,7 @@ require (
 	github.com/stretchr/objx v0.1.0 // indirect
 	github.com/stretchr/testify v1.7.1 // indirect
 	github.com/viant/assertly v0.9.0 // indirect
+	github.com/viant/parsly v0.0.0-20220309230857-3a8c3e9c4030 // indirect
 	github.com/viant/toolbox v0.34.5 // indirect
 	github.com/viant/xunsafe v0.8.0 // indirect
 	golang.org/x/net v0.0.0-20220401154927-543a649e0bdd // indirect

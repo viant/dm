@@ -23,17 +23,26 @@ func TestNew(t *testing.T) {
 		expected  []string
 	}
 
+	type attributesMutations struct {
+		selectors []xml.Selector
+		attribute string
+		newValues []string
+	}
+
 	testcases := []struct {
-		description      string
-		uri              string
-		valuesSearch     []valuesSearch
-		attributesSearch []attributeSearch
+		description         string
+		uri                 string
+		valuesSearch        []valuesSearch
+		attributesSearch    []attributeSearch
+		attributesMutations []attributesMutations
 	}{
 		{
-			uri: "xml001",
+			uri:         "xml001",
+			description: "xml001",
 		},
 		{
-			uri: "xml002",
+			uri:         "xml002",
+			description: "xml002",
 			valuesSearch: []valuesSearch{
 				{
 					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.ElementSelector("id")},
@@ -52,10 +61,26 @@ func TestNew(t *testing.T) {
 				},
 			},
 		},
+		{
+			uri:         "xml003",
+			description: "xml003",
+			attributesMutations: []attributesMutations{
+				{
+					selectors: []xml.Selector{xml.ElementSelector("foo")},
+					attribute: "id",
+					newValues: []string{"123"},
+				},
+				{
+					selectors: []xml.Selector{xml.ElementSelector("foo")},
+					attribute: "name",
+					newValues: []string{"foo name changed"},
+				},
+			},
+		},
 	}
 
-	for _, testcase := range testcases[len(testcases)-1:] {
-		//for _, testcase := range testcases {
+	//for _, testcase := range testcases[:len(testcases)-1] {
+	for _, testcase := range testcases[2:3] {
 		templatePath := path.Join(testLocation, "testdata", testcase.uri)
 		vxml, err := readFromFile(path.Join(templatePath, "index.xml"))
 		if !assert.Nil(t, err, testcase.description) {
@@ -84,11 +109,24 @@ func TestNew(t *testing.T) {
 				element, _ := it.Next()
 				attribute, ok := element.Attribute(search.attribute)
 				assert.True(t, ok, testcase.description)
-				assert.Equal(t, search.expected[counter], attribute, testcase.description)
+				assert.Equal(t, search.expected[counter], attribute.Value(), testcase.description)
 				counter++
 			}
 
 			assert.Equal(t, counter, len(search.expected), testcase.description)
+		}
+
+		for _, search := range testcase.attributesMutations {
+			it := xml.Select(search.selectors...)
+			counter := 0
+			for it.Has() {
+				element, _ := it.Next()
+				attribute, ok := element.Attribute(search.attribute)
+				assert.True(t, ok, testcase.description)
+				attribute.Set(search.newValues[counter])
+			}
+
+			assert.Equal(t, counter, len(search.newValues), testcase.description)
 		}
 
 		result, err := os.ReadFile(path.Join(templatePath, "expect.xml"))

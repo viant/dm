@@ -3,6 +3,7 @@ package xml
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 )
 
 type VirtualXml struct {
@@ -14,10 +15,10 @@ type VirtualXml struct {
 func New(template string, options ...Option) (*VirtualXml, error) {
 	vxml := &VirtualXml{
 		template:   []byte(template),
-		builder:    newBuilder(),
 		bufferSize: len(template),
 	}
 
+	vxml.builder = newBuilder(vxml)
 	vxml.apply(options)
 
 	if err := vxml.Init(); err != nil {
@@ -29,6 +30,7 @@ func New(template string, options ...Option) (*VirtualXml, error) {
 
 func (v *VirtualXml) Init() error {
 	decoder := xml.NewDecoder(bytes.NewReader(v.template))
+	var prevOffset int
 	for {
 		token, err := decoder.Token()
 		if err != nil {
@@ -41,13 +43,19 @@ func (v *VirtualXml) Init() error {
 
 		switch actual := token.(type) {
 		case xml.StartElement:
-			v.builder.addElement(actual, int(decoder.InputOffset()))
+			err := v.builder.addElement(actual, int(decoder.InputOffset()), v.template[prevOffset:decoder.InputOffset()], prevOffset)
+			if err != nil {
+				return err
+			}
 		case xml.EndElement:
 			v.builder.closeElement()
 		case xml.CharData:
 			v.builder.addCharData(int(decoder.InputOffset()))
+		default:
+			fmt.Printf("%T, %v\n", actual, actual)
 		}
 
+		prevOffset = int(decoder.InputOffset())
 	}
 }
 

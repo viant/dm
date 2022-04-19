@@ -9,6 +9,15 @@ func (e *Element) Value() string {
 	return string(e.xml.vXml.template[e.startElement.start:e.startElement.end])
 }
 
-func (e *Element) Attribute(attribute string) (string, bool) {
-	return e.startElement.attrByName(attribute)
+func (e *Element) Attribute(attribute string) (*Attribute, bool) {
+	index, ok := e.startElement.attrByName(attribute)
+	if !ok {
+		return nil, false
+	}
+
+	return &Attribute{
+		xml:     e.xml,
+		element: e,
+		index:   index,
+	}, true
 }
