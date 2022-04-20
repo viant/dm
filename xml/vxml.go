@@ -3,7 +3,6 @@ package xml
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 )
 
 type VirtualXml struct {
@@ -51,8 +50,6 @@ func (v *VirtualXml) Init() error {
 			v.builder.closeElement()
 		case xml.CharData:
 			v.builder.addCharData(int(decoder.InputOffset()))
-		default:
-			fmt.Printf("%T, %v\n", actual, actual)
 		}
 
 		prevOffset = int(decoder.InputOffset())

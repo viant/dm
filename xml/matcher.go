@@ -1,6 +1,7 @@
 package xml
 
 type matcher struct {
+	xml     *Xml
 	indexes []int
 	index   int
 
@@ -45,6 +46,14 @@ func (m *matcher) matchAny() (*StartElement, bool) {
 				return element, true
 			}
 		}
+	case AttributeSelector:
+		for ; m.indexes[m.index] < len(m.currRoot.children); m.indexes[m.index]++ {
+			startElement := m.currRoot.children[m.indexes[m.index]]
+			attrIndex, ok := startElement.attrByName(actual.Name)
+			if ok && m.checkAttributeValue(startElement, attrIndex, actual.Value) {
+				return startElement, true
+			}
+		}
 	}
 
 	return nil, false
@@ -58,10 +67,20 @@ func (m *matcher) updateIndexes() {
 	}
 }
 
-func newMatcher(root *StartElement, selectors []Selector) *matcher {
+func (m *matcher) checkAttributeValue(element *StartElement, attr int, attrValue string) bool {
+	value, ok := m.xml.attributeValue(attr)
+	if ok {
+		return value == attrValue
+	}
+
+	return element.Attr[attr].Value == attrValue
+}
+
+func newMatcher(xml *Xml, selectors []Selector) *matcher {
 	return &matcher{
 		indexes:   make([]int, len(selectors)),
 		selectors: selectors,
-		currRoot:  root,
+		currRoot:  xml.vXml.root,
+		xml:       xml,
 	}
 }

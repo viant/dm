@@ -44,6 +44,6 @@ func NewIterator(xml *Xml, selectors []Selector) *Iterator {
 		xml:     xml,
 		current: -1,
 		next:    -1,
-		matcher: newMatcher(xml.vXml.root, selectors),
+		matcher: newMatcher(xml, selectors),
 	}
 }

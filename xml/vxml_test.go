@@ -29,12 +29,18 @@ func TestNew(t *testing.T) {
 		newValues []string
 	}
 
+	type newAttribute struct {
+		selectors []xml.Selector
+		values    []string
+	}
+
 	testcases := []struct {
 		description         string
 		uri                 string
 		valuesSearch        []valuesSearch
 		attributesSearch    []attributeSearch
 		attributesMutations []attributesMutations
+		newAttributes       []newAttribute
 	}{
 		{
 			uri:         "xml001",
@@ -77,6 +83,26 @@ func TestNew(t *testing.T) {
 				},
 			},
 		},
+		{
+			uri:         "xml004",
+			description: "xml004",
+			newAttributes: []newAttribute{
+				{
+					selectors: []xml.Selector{xml.AttributeSelector{
+						Name:  "test",
+						Value: "true",
+					}},
+					values: []string{"<price>123.5</price>"},
+				},
+				{
+					selectors: []xml.Selector{xml.AttributeSelector{
+						Name:  "test",
+						Value: "true",
+					}},
+					values: []string{"<quantity>550</quantity>"},
+				},
+			},
+		},
 	}
 
 	//for _, testcase := range testcases[len(testcases)-1:] {
@@ -116,19 +142,31 @@ func TestNew(t *testing.T) {
 			assert.Equal(t, counter, len(search.expected), testcase.description)
 		}
 
-		for _, search := range testcase.attributesMutations {
-			it := xml.Select(search.selectors...)
+		for _, attributesMutation := range testcase.attributesMutations {
+			it := xml.Select(attributesMutation.selectors...)
 			counter := 0
 			for it.Has() {
 				element, _ := it.Next()
-				attribute, ok := element.Attribute(search.attribute)
+				attribute, ok := element.Attribute(attributesMutation.attribute)
 				assert.True(t, ok, testcase.description)
-				attribute.Set(search.newValues[counter])
-				assert.Equal(t, attribute.Value(), search.newValues[counter], testcase.description)
+				attribute.Set(attributesMutation.newValues[counter])
+				assert.Equal(t, attribute.Value(), attributesMutation.newValues[counter], testcase.description)
 				counter++
 			}
 
-			assert.Equal(t, counter, len(search.newValues), testcase.description)
+			assert.Equal(t, counter, len(attributesMutation.newValues), testcase.description)
+		}
+
+		for _, attr := range testcase.newAttributes {
+			it := xml.Select(attr.selectors...)
+			counter := 0
+			for it.Has() {
+				element, _ := it.Next()
+				element.AddElement(attr.values[counter])
+				counter++
+			}
+
+			assert.Equal(t, counter, len(attr.values), testcase.description)
 		}
 
 		result, err := os.ReadFile(path.Join(templatePath, "expect.xml"))
@@ -136,7 +174,8 @@ func TestNew(t *testing.T) {
 			return
 		}
 
-		assert.Equal(t, string(result), xml.Render(), testcase.description)
+		render := xml.Render()
+		assert.Equal(t, string(result), render, testcase.description)
 	}
 }
 

@@ -10,15 +10,28 @@ type (
 	mutations struct {
 		attributes      []*attributeMutation
 		attributesIndex map[int]int
+
+		elements      []*elementMutation
+		elementsIndex map[int]int
 	}
 
 	attributeMutation struct {
 		newValue string
 		index    int
 	}
+
+	elementMutation struct {
+		index       int
+		value       string
+		newElements []*newElement
+	}
+
+	newElement struct {
+		value string
+	}
 )
 
-func (m *mutations) update(index int, value string) {
+func (m *mutations) updateAttribute(index int, value string) {
 	if m.attributesIndex == nil {
 		m.attributes[index] = &attributeMutation{newValue: value, index: index}
 	} else {
@@ -32,7 +45,7 @@ func (m *mutations) update(index int, value string) {
 	}
 }
 
-func (m *mutations) value(index int) (string, bool) {
+func (m *mutations) attributeValue(index int) (string, bool) {
 	if m.attributesIndex != nil {
 		if len(m.attributes) < 5 {
 			for _, mutation := range m.attributes {
@@ -60,6 +73,68 @@ func (m *mutations) value(index int) (string, bool) {
 	return mutation.newValue, mutation != nil
 }
 
+func (m *mutations) appendElement(index int, value string) {
+	if m.elementsIndex == nil {
+		m.updateElementUsingSlice(index, value)
+	} else {
+		m.updateElementUsingMap(index, value)
+	}
+}
+
+func (m *mutations) updateElementUsingMap(index int, value string) {
+	sliceIndex, ok := m.elementsIndex[index]
+	if ok {
+		m.elements[sliceIndex].newElements = append(m.elements[sliceIndex].newElements, elementOf(value))
+	} else {
+		m.elements = append(m.elements, &elementMutation{
+			index:       index,
+			newElements: []*newElement{elementOf(value)},
+		})
+
+		m.elementsIndex[index] = len(m.elements) - 1
+	}
+}
+
+func elementOf(value string) *newElement {
+	return &newElement{
+		value: value,
+	}
+}
+
+func (m *mutations) updateElementUsingSlice(index int, value string) {
+	mutation := m.elements[index]
+	if mutation != nil {
+		mutation.newElements = append(mutation.newElements, elementOf(value))
+	} else {
+		m.elements[index] = &elementMutation{
+			index:       index,
+			newElements: []*newElement{elementOf(value)},
+		}
+	}
+}
+
+func (m *mutations) elementMutations(index int) (*elementMutation, bool) {
+	if m.elementsIndex != nil {
+		if len(m.elements) < 5 {
+			for _, element := range m.elements {
+				if element.index == index {
+					return element, true
+				}
+			}
+
+			return nil, false
+		}
+
+		sliceIndex, ok := m.elementsIndex[index]
+		if !ok {
+			return nil, false
+		}
+		return m.elements[sliceIndex], true
+	}
+
+	return m.elements[index], m.elements[index] != nil
+}
+
 func (v *VirtualXml) Xml() *Xml {
 	return &Xml{
 		vXml:      v,
@@ -77,9 +152,19 @@ func newMutations(vxml *VirtualXml) mutations {
 		attributesIndex = map[int]int{}
 	}
 
+	var elementsMutations []*elementMutation
+	var elementsMutationsIndex map[int]int
+	if len(vxml.elements) < 30 {
+		elementsMutations = make([]*elementMutation, len(vxml.elements))
+	} else {
+		elementsMutationsIndex = map[int]int{}
+	}
+
 	return mutations{
 		attributes:      attributesMutations,
 		attributesIndex: attributesIndex,
+		elements:        elementsMutations,
+		elementsIndex:   elementsMutationsIndex,
 	}
 }
 
@@ -106,6 +191,7 @@ func (x *Xml) Render() string {
 			x.buffer.appendBytes(x.vXml.template[elem.attributes[len(elem.attributes)-1].valueEnd():elem.start])
 		}
 
+		x.renderNewElements(elem)
 		prevStart = elem.start
 	}
 
@@ -131,10 +217,22 @@ func (x *Xml) Select(selectors ...Selector) *Iterator {
 }
 
 func (x *Xml) renderAttributeValue(attribute *attribute) {
-	value, ok := x.mutations.value(attribute.index)
+	value, ok := x.mutations.attributeValue(attribute.index)
 	if ok {
 		x.buffer.appendBytes([]byte(value))
 	} else {
 		x.buffer.appendBytes(x.vXml.template[attribute.valueStart():attribute.valueEnd()])
+	}
+}
+
+func (x *Xml) renderNewElements(elem *StartElement) {
+	mutation, ok := x.mutations.elementMutations(elem.elemIndex)
+	if !ok {
+		return
+	}
+
+	for _, element := range mutation.newElements {
+		x.buffer.appendBytes([]byte{'\n'})
+		x.buffer.appendBytes([]byte(element.value))
 	}
 }
