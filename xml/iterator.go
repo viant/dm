@@ -2,6 +2,7 @@ package xml
 
 import "fmt"
 
+//Iterator iterates over matching Elements
 type Iterator struct {
 	xml     *Xml
 	current int
@@ -9,6 +10,7 @@ type Iterator struct {
 	matcher *matcher
 }
 
+//Has returns true if there are more matching elements
 func (i *Iterator) Has() bool {
 	if i.current < i.next {
 		return true
@@ -23,6 +25,7 @@ func (i *Iterator) Has() bool {
 	return i.next != -1
 }
 
+//Next returns next matching Element
 func (i *Iterator) Next() (*Element, error) {
 	if i.next == i.current {
 		return nil, fmt.Errorf("it is needed to call Has, before Next is called")
@@ -39,7 +42,7 @@ func (i *Iterator) Next() (*Element, error) {
 	}, nil
 }
 
-func NewIterator(xml *Xml, selectors []Selector) *Iterator {
+func newIterator(xml *Xml, selectors []Selector) *Iterator {
 	return &Iterator{
 		xml:     xml,
 		current: -1,

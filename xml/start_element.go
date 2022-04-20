@@ -3,16 +3,16 @@ package xml
 import "encoding/xml"
 
 type (
-	StartElement struct {
+	startElement struct {
 		*xml.StartElement
 		span
 
-		parent      *StartElement
-		children    []*StartElement
+		parent      *startElement
+		children    []*startElement
 		parentIndex int
 		elemIndex   int
 		nextSibling int
-		vxml        *VirtualXml
+		vxml        *Schema
 		indent      []byte
 
 		attributeIndex map[string]int
@@ -42,7 +42,7 @@ func (a *attribute) keyEnd() int {
 	return a.spans[0].end
 }
 
-func (s *StartElement) Append(child *StartElement) {
+func (s *startElement) append(child *startElement) {
 	child.parentIndex = len(s.children)
 	if len(s.children) > 0 {
 		s.children[len(s.children)-1].nextSibling = child.elemIndex
@@ -52,7 +52,7 @@ func (s *StartElement) Append(child *StartElement) {
 	child.parent = s
 }
 
-func (s *StartElement) attrByName(attribute string) (int, bool) {
+func (s *startElement) attrByName(attribute string) (int, bool) {
 	if s.attributeIndex != nil {
 		value, ok := s.attributeIndex[attribute]
 		return value, ok
@@ -67,8 +67,8 @@ func (s *StartElement) attrByName(attribute string) (int, bool) {
 	return -1, false
 }
 
-func NewStartElement(element *xml.StartElement, virtualXml *VirtualXml, elemIndex int, startPosition int, attributes []*attribute) *StartElement {
-	elem := &StartElement{
+func newStartElement(element *xml.StartElement, virtualXml *Schema, elemIndex int, startPosition int, attributes []*attribute) *startElement {
+	elem := &startElement{
 		StartElement: element,
 		elemIndex:    elemIndex,
 		span: span{
@@ -83,7 +83,7 @@ func NewStartElement(element *xml.StartElement, virtualXml *VirtualXml, elemInde
 	return elem
 }
 
-func (s *StartElement) init() {
+func (s *startElement) init() {
 	if s.StartElement == nil {
 		return
 	}

@@ -5,29 +5,31 @@ import (
 	"encoding/xml"
 )
 
-type VirtualXml struct {
+//Schema represents Xml schema
+type Schema struct {
 	template []byte
 	*builder
 	bufferSize int
 }
 
-func New(template string, options ...Option) (*VirtualXml, error) {
-	vxml := &VirtualXml{
-		template:   []byte(template),
-		bufferSize: len(template),
+//New creates new Schema
+func New(xml string, options ...Option) (*Schema, error) {
+	vxml := &Schema{
+		template:   []byte(xml),
+		bufferSize: len(xml),
 	}
 
 	vxml.builder = newBuilder(vxml)
 	vxml.apply(options)
 
-	if err := vxml.Init(); err != nil {
+	if err := vxml.init(); err != nil {
 		return nil, err
 	}
 
 	return vxml, nil
 }
 
-func (v *VirtualXml) Init() error {
+func (v *Schema) init() error {
 	decoder := xml.NewDecoder(bytes.NewReader(v.template))
 	var prevOffset int
 	for {
@@ -56,7 +58,7 @@ func (v *VirtualXml) Init() error {
 	}
 }
 
-func (v *VirtualXml) apply(options []Option) {
+func (v *Schema) apply(options []Option) {
 	for _, option := range options {
 		switch actual := option.(type) {
 		case BufferSize:

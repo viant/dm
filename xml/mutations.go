@@ -142,7 +142,7 @@ func (m *mutations) addElementMutation(mutation *elementMutation) {
 	}
 }
 
-func (m *mutations) updateValue(elemIndex int, value string) {
+func (m *mutations) setValue(elemIndex int, value string) {
 	mutation, ok := m.elementMutations(elemIndex)
 	if ok {
 		mutation.value = value
@@ -157,4 +157,29 @@ func (m *mutations) updateValue(elemIndex int, value string) {
 		valueChanged: true,
 	}
 	m.addElementMutation(mutation)
+}
+
+func newMutations(vxml *Schema) mutations {
+	var attributesIndex map[int]int
+	var attributesMutations []*attributeMutation
+	if vxml.builder.attributeCounter < 30 {
+		attributesMutations = make([]*attributeMutation, vxml.builder.attributeCounter)
+	} else {
+		attributesIndex = map[int]int{}
+	}
+
+	var elementsMutations []*elementMutation
+	var elementsMutationsIndex map[int]int
+	if len(vxml.elements) < 30 {
+		elementsMutations = make([]*elementMutation, len(vxml.elements))
+	} else {
+		elementsMutationsIndex = map[int]int{}
+	}
+
+	return mutations{
+		attributes:      attributesMutations,
+		attributesIndex: attributesIndex,
+		elements:        elementsMutations,
+		elementsIndex:   elementsMutationsIndex,
+	}
 }

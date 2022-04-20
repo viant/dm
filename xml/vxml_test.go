@@ -239,7 +239,8 @@ func TestNew(t *testing.T) {
 			counter := 0
 			for it.Has() {
 				element, _ := it.Next()
-				element.Set(newVal.values[counter])
+				element.SetValue(newVal.values[counter])
+				assert.Equal(t, newVal.values[counter], element.Value(), testcase.description)
 				counter++
 			}
 
@@ -256,7 +257,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func readFromFile(path string) (*xml.VirtualXml, error) {
+func readFromFile(path string) (*xml.Schema, error) {
 	template, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err

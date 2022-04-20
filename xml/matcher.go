@@ -6,24 +6,25 @@ type matcher struct {
 	index   int
 
 	selectors []Selector
-	currRoot  *StartElement
+	currRoot  *startElement
 }
 
-func (m *matcher) updateIndex() {
+func (m *matcher) updateIndexes() {
 	if m.index == len(m.selectors) {
 		m.index--
 		m.indexes[m.index]++
 	}
 
-	for !(m.indexes[m.index] < len(m.currRoot.children)-1) && !(m.index == 0) {
+	for !(m.indexes[m.index] < len(m.currRoot.children)-1) && m.index != 0 {
 		m.indexes[m.index] = 0
 		m.index--
 		m.indexes[m.index] += 1
+		m.currRoot = m.currRoot.parent
 	}
 }
 
 func (m *matcher) match() int {
-	m.updateIndex()
+	m.updateIndexes()
 
 	for m.index < len(m.selectors) {
 		if elem, ok := m.matchAny(); ok {
@@ -36,13 +37,13 @@ func (m *matcher) match() int {
 			return -1
 		}
 
-		m.updateIndex()
+		m.updateIndexes()
 	}
 
 	return m.currRoot.elemIndex
 }
 
-func (m *matcher) matchAny() (*StartElement, bool) {
+func (m *matcher) matchAny() (*startElement, bool) {
 	switch actual := m.selectors[m.index].(type) {
 	case ElementSelector:
 		for ; m.indexes[m.index] < len(m.currRoot.children); m.indexes[m.index]++ {
@@ -50,6 +51,7 @@ func (m *matcher) matchAny() (*StartElement, bool) {
 				return element, true
 			}
 		}
+
 	case AttributeSelector:
 		for ; m.indexes[m.index] < len(m.currRoot.children); m.indexes[m.index]++ {
 			startElement := m.currRoot.children[m.indexes[m.index]]
@@ -63,7 +65,7 @@ func (m *matcher) matchAny() (*StartElement, bool) {
 	return nil, false
 }
 
-func (m *matcher) checkAttributeValue(element *StartElement, attr int, attrValue string) bool {
+func (m *matcher) checkAttributeValue(element *startElement, attr int, attrValue string) bool {
 	value, ok := m.xml.attributeValue(attr)
 	if ok {
 		return value == attrValue

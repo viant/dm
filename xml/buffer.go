@@ -1,6 +1,6 @@
 package xml
 
-//Buffer hold the current VirtualDOM value
+//Buffer hold the current XML value
 type Buffer struct {
 	buffer []byte
 	pos    int
@@ -31,6 +31,7 @@ func (b *Buffer) growIfNeeded(grow int) {
 	b.buffer = newBuffer
 }
 
+//String returns String representation of the buffer
 func (b *Buffer) String() string {
 	return string(b.buffer[:b.pos])
 }
