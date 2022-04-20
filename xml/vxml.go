@@ -49,7 +49,7 @@ func (v *VirtualXml) Init() error {
 		case xml.EndElement:
 			v.builder.closeElement()
 		case xml.CharData:
-			v.builder.addCharData(int(decoder.InputOffset()))
+			v.builder.addCharData(int(decoder.InputOffset()), actual)
 		}
 
 		prevOffset = int(decoder.InputOffset())

@@ -3,11 +3,6 @@ package xml
 import "encoding/xml"
 
 type (
-	attribute struct {
-		spans [2]span
-		index int
-	}
-
 	StartElement struct {
 		*xml.StartElement
 		span
@@ -17,10 +12,16 @@ type (
 		parentIndex int
 		elemIndex   int
 		vxml        *VirtualXml
+		indent      []byte
 
 		attributeIndex map[string]int
 		attributesName []string
 		attributes     []*attribute
+	}
+
+	attribute struct {
+		spans [2]span
+		index int
 	}
 )
 

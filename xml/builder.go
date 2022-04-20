@@ -49,9 +49,14 @@ func (b *builder) closeElement() {
 	b.indexesStack = b.indexesStack[:len(b.indexesStack)-1]
 }
 
-func (b *builder) addCharData(offset int) {
-	currentElem := b.indexesStack[len(b.indexesStack)-1]
-	element := b.elements[currentElem]
+func (b *builder) addCharData(offset int, actual xml.CharData) {
+	elemIndex := b.indexesStack[len(b.indexesStack)-1]
+	element := b.elements[elemIndex]
+
+	if element.indent == nil {
+		element.indent = actual.Copy()
+	}
+
 	element.end = offset
 
 	if element.parent != nil {

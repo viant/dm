@@ -232,7 +232,9 @@ func (x *Xml) renderNewElements(elem *StartElement) {
 	}
 
 	for _, element := range mutation.newElements {
-		x.buffer.appendBytes([]byte{'\n'})
+		if elem.indent != nil {
+			x.buffer.appendBytes(elem.indent)
+		}
 		x.buffer.appendBytes([]byte(element.value))
 	}
 }
