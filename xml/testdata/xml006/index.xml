@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<foo test="true">
+    <id>1</id>
+    <name>foo name</name>
+    <address>
+        <street>abc</street>
+        <zip-code>123456</zip-code>
+        <country>
+            <id>1</id>
+            <name>def</name>
+        </country>
+    </address>
+</foo>

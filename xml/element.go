@@ -29,3 +29,7 @@ func (e *Element) AddElement(value string) {
 func (e *Element) AddAttribute(key string, value string) {
 	e.xml.mutations.addAttribute(e.startElement.elemIndex, key, value)
 }
+
+func (e *Element) Set(value string) {
+	e.xml.mutations.updateValue(e.startElement.elemIndex, value)
+}

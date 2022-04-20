@@ -44,13 +44,17 @@ func newMutations(vxml *VirtualXml) mutations {
 func (x *Xml) Render() string {
 	x.buffer.pos = 0
 
-	var prevStart int
-	var elem *StartElement
-	for _, elem = range x.vXml.allElements() {
-		if len(elem.attributes) == 0 {
-			x.buffer.appendBytes(x.vXml.template[prevStart:elem.start])
-		} else {
-			x.buffer.appendBytes(x.vXml.template[prevStart:elem.attributes[0].valueStart()])
+	var prevEnd int
+	var skipped int
+	var valueChanged bool
+	for _, elem := range x.vXml.allElements() {
+		if skipped > 0 {
+			skipped += len(elem.children) - 1
+			continue
+		}
+
+		if len(elem.attributes) > 0 {
+			x.buffer.appendBytes(x.vXml.template[prevEnd:elem.attributes[0].valueStart()])
 			x.renderAttributeValue(elem.attributes[0])
 
 			if len(elem.attributes) > 1 {
@@ -64,16 +68,18 @@ func (x *Xml) Render() string {
 			x.buffer.appendByte(x.vXml.template[elem.attributes[len(elem.attributes)-1].valueEnd()])
 			x.renderNewAttributes(elem)
 			x.buffer.appendBytes(x.vXml.template[elem.attributes[len(elem.attributes)-1].valueEnd()+1 : elem.start])
+		} else {
+			x.buffer.appendBytes(x.vXml.template[prevEnd:elem.start])
 		}
 
 		x.renderNewElements(elem)
-		prevStart = elem.start
+		prevEnd, valueChanged = x.renderElemValue(elem)
+		if valueChanged {
+			skipped = len(elem.children)
+		}
 	}
 
-	if elem != nil {
-		x.buffer.appendBytes(x.vXml.template[elem.start:elem.end])
-		x.buffer.appendBytes(x.vXml.template[elem.end:])
-	}
+	x.buffer.appendBytes(x.vXml.template[prevEnd:])
 
 	return x.buffer.String()
 }
@@ -127,4 +133,28 @@ func (x *Xml) renderNewAttributes(elem *StartElement) {
 		x.buffer.appendBytes([]byte(newAttr.value))
 		x.buffer.appendByte('"')
 	}
+}
+
+func (x *Xml) renderElemValue(elem *StartElement) (int, bool) {
+	elemMutation, ok := x.mutations.elementMutations(elem.elemIndex)
+	elemStart := elem.start
+	if ok && elemMutation.valueChanged {
+		x.buffer.appendBytes([]byte(elemMutation.value))
+		elemStart = elem.end
+	}
+
+	end := len(x.vXml.template)
+	if elem.elemIndex < len(x.vXml.elements)-1 {
+		nextElem := elem.elemIndex + 1
+		end = x.vXml.elements[nextElem].start
+		if len(x.vXml.elements[nextElem].attributes) > 0 {
+			end = x.vXml.elements[nextElem].attributes[0].keyStart()
+		}
+	}
+
+	if elemStart > end {
+		return elemStart, true
+	}
+	x.buffer.appendBytes(x.vXml.template[elemStart:end])
+	return end, elemStart == elem.end
 }

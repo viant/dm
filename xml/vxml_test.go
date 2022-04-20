@@ -29,7 +29,7 @@ func TestNew(t *testing.T) {
 		newValues []string
 	}
 
-	type newElements struct {
+	type newElement struct {
 		selectors []xml.Selector
 		values    []string
 	}
@@ -40,14 +40,20 @@ func TestNew(t *testing.T) {
 		values    []string
 	}
 
+	type newValue struct {
+		selectors []xml.Selector
+		values    []string
+	}
+
 	testcases := []struct {
 		description       string
 		uri               string
 		valuesSearch      []valuesSearch
 		attributesSearch  []attributeSearch
 		attributesChanges []attributeChange
-		newElements       []newElements
+		newElements       []newElement
 		newAttributes     []newAttribute
+		newValues         []newValue
 	}{
 		{
 			uri:         "xml001",
@@ -93,7 +99,7 @@ func TestNew(t *testing.T) {
 		{
 			uri:         "xml004",
 			description: "xml004",
-			newElements: []newElements{
+			newElements: []newElement{
 				{
 					selectors: []xml.Selector{xml.AttributeSelector{
 						Name:  "test",
@@ -129,6 +135,24 @@ func TestNew(t *testing.T) {
 					}},
 					keys:   []string{"quantity"},
 					values: []string{"50.5"},
+				},
+			},
+		},
+		{
+			uri:         "xml006",
+			description: "xml006",
+			newValues: []newValue{
+				{
+					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.ElementSelector("id")},
+					values:    []string{"2"},
+				},
+				{
+					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.ElementSelector("name")},
+					values:    []string{"foo"},
+				},
+				{
+					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.ElementSelector("address")},
+					values:    []string{""},
 				},
 			},
 		},
@@ -208,6 +232,18 @@ func TestNew(t *testing.T) {
 			}
 
 			assert.Equal(t, counter, len(newAttr.values), testcase.description)
+		}
+
+		for _, newVal := range testcase.newValues {
+			it := xml.Select(newVal.selectors...)
+			counter := 0
+			for it.Has() {
+				element, _ := it.Next()
+				element.Set(newVal.values[counter])
+				counter++
+			}
+
+			assert.Equal(t, counter, len(newVal.values), testcase.description)
 		}
 
 		result, err := os.ReadFile(path.Join(templatePath, "expect.xml"))

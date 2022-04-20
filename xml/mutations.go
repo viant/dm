@@ -19,6 +19,7 @@ type (
 		value         string
 		newElements   []*newElement
 		newAttributes []*newAttribute
+		valueChanged  bool
 	}
 
 	newElement struct {
@@ -139,4 +140,21 @@ func (m *mutations) addElementMutation(mutation *elementMutation) {
 		m.elementsIndex[mutation.index] = len(m.elements)
 		m.elements = append(m.elements, mutation)
 	}
+}
+
+func (m *mutations) updateValue(elemIndex int, value string) {
+	mutation, ok := m.elementMutations(elemIndex)
+	if ok {
+		mutation.value = value
+		mutation.newElements = nil
+		mutation.valueChanged = true
+		return
+	}
+
+	mutation = &elementMutation{
+		index:        elemIndex,
+		value:        value,
+		valueChanged: true,
+	}
+	m.addElementMutation(mutation)
 }
