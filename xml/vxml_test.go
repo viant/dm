@@ -23,24 +23,31 @@ func TestNew(t *testing.T) {
 		expected  []string
 	}
 
-	type attributesMutations struct {
+	type attributeChange struct {
 		selectors []xml.Selector
 		attribute string
 		newValues []string
 	}
 
-	type newAttribute struct {
+	type newElements struct {
 		selectors []xml.Selector
 		values    []string
 	}
 
+	type newAttribute struct {
+		selectors []xml.Selector
+		keys      []string
+		values    []string
+	}
+
 	testcases := []struct {
-		description         string
-		uri                 string
-		valuesSearch        []valuesSearch
-		attributesSearch    []attributeSearch
-		attributesMutations []attributesMutations
-		newAttributes       []newAttribute
+		description       string
+		uri               string
+		valuesSearch      []valuesSearch
+		attributesSearch  []attributeSearch
+		attributesChanges []attributeChange
+		newElements       []newElements
+		newAttributes     []newAttribute
 	}{
 		{
 			uri:         "xml001",
@@ -70,7 +77,7 @@ func TestNew(t *testing.T) {
 		{
 			uri:         "xml003",
 			description: "xml003",
-			attributesMutations: []attributesMutations{
+			attributesChanges: []attributeChange{
 				{
 					selectors: []xml.Selector{xml.ElementSelector("foo")},
 					attribute: "id",
@@ -86,7 +93,7 @@ func TestNew(t *testing.T) {
 		{
 			uri:         "xml004",
 			description: "xml004",
-			newAttributes: []newAttribute{
+			newElements: []newElements{
 				{
 					selectors: []xml.Selector{xml.AttributeSelector{
 						Name:  "test",
@@ -100,6 +107,28 @@ func TestNew(t *testing.T) {
 						Value: "true",
 					}},
 					values: []string{"<quantity>550</quantity>"},
+				},
+			},
+		},
+		{
+			uri:         "xml005",
+			description: "xml005",
+			newAttributes: []newAttribute{
+				{
+					selectors: []xml.Selector{xml.AttributeSelector{
+						Name:  "test",
+						Value: "true",
+					}},
+					keys:   []string{"price"},
+					values: []string{"123"},
+				},
+				{
+					selectors: []xml.Selector{xml.AttributeSelector{
+						Name:  "test",
+						Value: "true",
+					}},
+					keys:   []string{"quantity"},
+					values: []string{"50.5"},
 				},
 			},
 		},
@@ -142,7 +171,7 @@ func TestNew(t *testing.T) {
 			assert.Equal(t, counter, len(search.expected), testcase.description)
 		}
 
-		for _, attributesMutation := range testcase.attributesMutations {
+		for _, attributesMutation := range testcase.attributesChanges {
 			it := xml.Select(attributesMutation.selectors...)
 			counter := 0
 			for it.Has() {
@@ -157,16 +186,28 @@ func TestNew(t *testing.T) {
 			assert.Equal(t, counter, len(attributesMutation.newValues), testcase.description)
 		}
 
-		for _, attr := range testcase.newAttributes {
-			it := xml.Select(attr.selectors...)
+		for _, newElem := range testcase.newElements {
+			it := xml.Select(newElem.selectors...)
 			counter := 0
 			for it.Has() {
 				element, _ := it.Next()
-				element.AddElement(attr.values[counter])
+				element.AddElement(newElem.values[counter])
 				counter++
 			}
 
-			assert.Equal(t, counter, len(attr.values), testcase.description)
+			assert.Equal(t, counter, len(newElem.values), testcase.description)
+		}
+
+		for _, newAttr := range testcase.newAttributes {
+			it := xml.Select(newAttr.selectors...)
+			counter := 0
+			for it.Has() {
+				element, _ := it.Next()
+				element.AddAttribute(newAttr.keys[counter], newAttr.values[counter])
+				counter++
+			}
+
+			assert.Equal(t, counter, len(newAttr.values), testcase.description)
 		}
 
 		result, err := os.ReadFile(path.Join(templatePath, "expect.xml"))

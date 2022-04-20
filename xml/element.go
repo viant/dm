@@ -23,5 +23,9 @@ func (e *Element) Attribute(attribute string) (*Attribute, bool) {
 }
 
 func (e *Element) AddElement(value string) {
-	e.xml.mutations.appendElement(e.startElement.elemIndex, value)
+	e.xml.mutations.addElement(e.startElement.elemIndex, value)
+}
+
+func (e *Element) AddAttribute(key string, value string) {
+	e.xml.mutations.addAttribute(e.startElement.elemIndex, key, value)
 }

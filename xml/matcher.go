@@ -15,7 +15,11 @@ func (m *matcher) updateIndex() {
 		m.indexes[m.index]++
 	}
 
-	m.updateIndexes()
+	for !(m.indexes[m.index] < len(m.currRoot.children)-1) && !(m.index == 0) {
+		m.indexes[m.index] = 0
+		m.index--
+		m.indexes[m.index] += 1
+	}
 }
 
 func (m *matcher) match() int {
@@ -57,14 +61,6 @@ func (m *matcher) matchAny() (*StartElement, bool) {
 	}
 
 	return nil, false
-}
-
-func (m *matcher) updateIndexes() {
-	for !(m.indexes[m.index] < len(m.currRoot.children)-1) && !(m.index == 0) {
-		m.indexes[m.index] = 0
-		m.index--
-		m.indexes[m.index] += 1
-	}
 }
 
 func (m *matcher) checkAttributeValue(element *StartElement, attr int, attrValue string) bool {

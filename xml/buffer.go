@@ -6,12 +6,19 @@ type Buffer struct {
 	pos    int
 }
 
-func (b *Buffer) appendBytes(template []byte) int {
-	b.growIfNeeded(len(template))
-	copied := copy(b.buffer[b.pos:], template)
+func (b *Buffer) appendBytes(bytes []byte) int {
+	b.growIfNeeded(len(bytes))
+	copied := copy(b.buffer[b.pos:], bytes)
 	b.pos += copied
 
 	return copied
+}
+
+func (b *Buffer) appendByte(value byte) int {
+	b.growIfNeeded(1)
+	b.buffer[b.pos] = value
+	b.pos++
+	return 1
 }
 
 func (b *Buffer) growIfNeeded(grow int) {

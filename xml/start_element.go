@@ -97,7 +97,7 @@ func (s *StartElement) init() {
 	}
 }
 
-func newAttribute(spans [2]span, counter int) *attribute {
+func attributeOf(spans [2]span, counter int) *attribute {
 	return &attribute{
 		spans: spans,
 		index: counter,

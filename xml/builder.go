@@ -21,7 +21,7 @@ func (b *builder) addElement(actual xml.StartElement, valueStart int, raw []byte
 
 	attributes := make([]*attribute, len(attributesSpan))
 	for i := range attributesSpan {
-		attributes[i] = newAttribute(attributesSpan[i], b.attributeCounter)
+		attributes[i] = attributeOf(attributesSpan[i], b.attributeCounter)
 		b.attributeCounter++
 	}
 

@@ -6,134 +6,7 @@ type (
 		buffer *Buffer
 		mutations
 	}
-
-	mutations struct {
-		attributes      []*attributeMutation
-		attributesIndex map[int]int
-
-		elements      []*elementMutation
-		elementsIndex map[int]int
-	}
-
-	attributeMutation struct {
-		newValue string
-		index    int
-	}
-
-	elementMutation struct {
-		index       int
-		value       string
-		newElements []*newElement
-	}
-
-	newElement struct {
-		value string
-	}
 )
-
-func (m *mutations) updateAttribute(index int, value string) {
-	if m.attributesIndex == nil {
-		m.attributes[index] = &attributeMutation{newValue: value, index: index}
-	} else {
-		sliceIndex, ok := m.attributesIndex[index]
-		if !ok {
-			m.attributes = append(m.attributes, &attributeMutation{newValue: value, index: index})
-			m.attributesIndex[index] = len(m.attributes) - 1
-		} else {
-			m.attributes[sliceIndex].newValue = value
-		}
-	}
-}
-
-func (m *mutations) attributeValue(index int) (string, bool) {
-	if m.attributesIndex != nil {
-		if len(m.attributes) < 5 {
-			for _, mutation := range m.attributes {
-				if mutation != nil && mutation.index == index {
-					return mutation.newValue, true
-				}
-			}
-
-			return "", false
-		}
-
-		sliceIndex, ok := m.attributesIndex[index]
-		if !ok {
-			return "", false
-		}
-		return m.attributes[sliceIndex].newValue, true
-	}
-
-	mutation := m.attributes[index]
-
-	if mutation == nil {
-		return "", false
-	}
-
-	return mutation.newValue, mutation != nil
-}
-
-func (m *mutations) appendElement(index int, value string) {
-	if m.elementsIndex == nil {
-		m.updateElementUsingSlice(index, value)
-	} else {
-		m.updateElementUsingMap(index, value)
-	}
-}
-
-func (m *mutations) updateElementUsingMap(index int, value string) {
-	sliceIndex, ok := m.elementsIndex[index]
-	if ok {
-		m.elements[sliceIndex].newElements = append(m.elements[sliceIndex].newElements, elementOf(value))
-	} else {
-		m.elements = append(m.elements, &elementMutation{
-			index:       index,
-			newElements: []*newElement{elementOf(value)},
-		})
-
-		m.elementsIndex[index] = len(m.elements) - 1
-	}
-}
-
-func elementOf(value string) *newElement {
-	return &newElement{
-		value: value,
-	}
-}
-
-func (m *mutations) updateElementUsingSlice(index int, value string) {
-	mutation := m.elements[index]
-	if mutation != nil {
-		mutation.newElements = append(mutation.newElements, elementOf(value))
-	} else {
-		m.elements[index] = &elementMutation{
-			index:       index,
-			newElements: []*newElement{elementOf(value)},
-		}
-	}
-}
-
-func (m *mutations) elementMutations(index int) (*elementMutation, bool) {
-	if m.elementsIndex != nil {
-		if len(m.elements) < 5 {
-			for _, element := range m.elements {
-				if element.index == index {
-					return element, true
-				}
-			}
-
-			return nil, false
-		}
-
-		sliceIndex, ok := m.elementsIndex[index]
-		if !ok {
-			return nil, false
-		}
-		return m.elements[sliceIndex], true
-	}
-
-	return m.elements[index], m.elements[index] != nil
-}
 
 func (v *VirtualXml) Xml() *Xml {
 	return &Xml{
@@ -188,7 +61,9 @@ func (x *Xml) Render() string {
 				x.renderAttribute(elem, i)
 			}
 
-			x.buffer.appendBytes(x.vXml.template[elem.attributes[len(elem.attributes)-1].valueEnd():elem.start])
+			x.buffer.appendByte(x.vXml.template[elem.attributes[len(elem.attributes)-1].valueEnd()])
+			x.renderNewAttributes(elem)
+			x.buffer.appendBytes(x.vXml.template[elem.attributes[len(elem.attributes)-1].valueEnd()+1 : elem.start])
 		}
 
 		x.renderNewElements(elem)
@@ -236,5 +111,20 @@ func (x *Xml) renderNewElements(elem *StartElement) {
 			x.buffer.appendBytes(elem.indent)
 		}
 		x.buffer.appendBytes([]byte(element.value))
+	}
+}
+
+func (x *Xml) renderNewAttributes(elem *StartElement) {
+	mutation, ok := x.mutations.elementMutations(elem.elemIndex)
+	if !ok {
+		return
+	}
+
+	for _, newAttr := range mutation.newAttributes {
+		x.buffer.appendByte(' ')
+		x.buffer.appendBytes([]byte(newAttr.key))
+		x.buffer.appendBytes([]byte(`="`))
+		x.buffer.appendBytes([]byte(newAttr.value))
+		x.buffer.appendByte('"')
 	}
 }
