@@ -45,14 +45,9 @@ func (x *Xml) Render() string {
 	x.buffer.pos = 0
 
 	var prevEnd int
-	var skipped int
 	var valueChanged bool
-	for _, elem := range x.vXml.allElements() {
-		if skipped > 0 {
-			skipped += len(elem.children) - 1
-			continue
-		}
-
+	for i := 1; i < len(x.vXml.elements); {
+		elem := x.vXml.elements[i]
 		if len(elem.attributes) > 0 {
 			x.buffer.appendBytes(x.vXml.template[prevEnd:elem.attributes[0].valueStart()])
 			x.renderAttributeValue(elem.attributes[0])
@@ -75,13 +70,29 @@ func (x *Xml) Render() string {
 		x.renderNewElements(elem)
 		prevEnd, valueChanged = x.renderElemValue(elem)
 		if valueChanged {
-			skipped = len(elem.children)
+			i = x.nextNotChildIndex(elem)
+			continue
 		}
+
+		i++
 	}
 
 	x.buffer.appendBytes(x.vXml.template[prevEnd:])
 
 	return x.buffer.String()
+}
+
+func (x *Xml) nextNotChildIndex(elem *StartElement) int {
+	if elem.nextSibling != -1 {
+		return elem.nextSibling
+	}
+
+	lastChild := elem
+	for len(lastChild.children) > 0 {
+		lastChild = lastChild.children[len(lastChild.children)-1]
+	}
+
+	return lastChild.elemIndex + 1
 }
 
 func (x *Xml) renderAttribute(elem *StartElement, attributeIndex int) {

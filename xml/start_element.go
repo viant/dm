@@ -11,6 +11,7 @@ type (
 		children    []*StartElement
 		parentIndex int
 		elemIndex   int
+		nextSibling int
 		vxml        *VirtualXml
 		indent      []byte
 
@@ -43,6 +44,10 @@ func (a *attribute) keyEnd() int {
 
 func (s *StartElement) Append(child *StartElement) {
 	child.parentIndex = len(s.children)
+	if len(s.children) > 0 {
+		s.children[len(s.children)-1].nextSibling = child.elemIndex
+	}
+
 	s.children = append(s.children, child)
 	child.parent = s
 }
@@ -69,8 +74,9 @@ func NewStartElement(element *xml.StartElement, virtualXml *VirtualXml, elemInde
 		span: span{
 			start: startPosition,
 		},
-		attributes: attributes,
-		vxml:       virtualXml,
+		attributes:  attributes,
+		vxml:        virtualXml,
+		nextSibling: -1,
 	}
 
 	elem.init()
