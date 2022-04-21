@@ -2,6 +2,7 @@ package xml
 
 import (
 	"encoding/xml"
+	"github.com/viant/dm/option"
 )
 
 type builder struct {
@@ -11,7 +12,7 @@ type builder struct {
 	indexesStack []int
 
 	attributeCounter int
-	filters          *Filters
+	filters          *option.Filters
 	skipped          int
 }
 
@@ -21,7 +22,7 @@ func (b *builder) addElement(actual xml.StartElement, valueStart int, raw []byte
 		return nil
 	}
 
-	var attributeFilter *Filter
+	var attributeFilter *option.Filter
 	if b.filters != nil {
 		var ok bool
 		attributeFilter, ok = b.filters.ElementFilter(name(&actual))
@@ -39,7 +40,7 @@ func (b *builder) addElement(actual xml.StartElement, valueStart int, raw []byte
 	attributes := make([]*attribute, len(attributesSpan))
 	counter := 0
 	for i, spans := range attributesSpan {
-		if attributeFilter != nil && !attributeFilter.Contains(b.schema.templateSlice(spans[0])) {
+		if attributeFilter != nil && !attributeFilter.Matches(b.schema.templateSlice(spans[0])) {
 			continue
 		}
 

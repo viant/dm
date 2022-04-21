@@ -159,19 +159,19 @@ func (m *changes) setValue(elemIndex int, value string) {
 	m.addElementMutation(mutation)
 }
 
-func newMutations(vxml *Schema) changes {
+func newMutations(schema *Schema) changes {
 	var attributesIndex map[int]int
 	var attributesMutations []*attributeChanges
-	if vxml.builder.attributeCounter < prealocateSize {
-		attributesMutations = make([]*attributeChanges, vxml.builder.attributeCounter)
+	if schema.builder.attributeCounter < schema.attributesChangesSize {
+		attributesMutations = make([]*attributeChanges, schema.builder.attributeCounter)
 	} else {
 		attributesIndex = map[int]int{}
 	}
 
 	var elementsMutations []*elementChanges
 	var elementsMutationsIndex map[int]int
-	if len(vxml.elements) < prealocateSize {
-		elementsMutations = make([]*elementChanges, len(vxml.elements))
+	if len(schema.elements) < schema.elementsChangesSize {
+		elementsMutations = make([]*elementChanges, len(schema.elements))
 	} else {
 		elementsMutationsIndex = map[int]int{}
 	}

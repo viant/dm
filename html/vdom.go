@@ -2,6 +2,7 @@ package html
 
 import (
 	"bytes"
+	"github.com/viant/dm/option"
 	"golang.org/x/net/html"
 	"io"
 )
@@ -11,17 +12,17 @@ type (
 	VirtualDOM struct {
 		template          []byte
 		initialBufferSize int
-		filter            *Filters
+		filter            *option.Filters
 		*builder
 	}
 )
 
-func (v *VirtualDOM) apply(options []Option) {
-	for _, option := range options {
-		switch actual := option.(type) {
-		case BufferSize:
+func (v *VirtualDOM) apply(options []option.Option) {
+	for _, opt := range options {
+		switch actual := opt.(type) {
+		case option.BufferSize:
 			v.initialBufferSize = int(actual)
-		case *Filters:
+		case *option.Filters:
 			v.filter = actual
 		}
 	}
@@ -33,7 +34,7 @@ func (v *VirtualDOM) AttributesLen() int {
 }
 
 //New parses template and creates new VirtualDOM. Filters can be specified to index some tags and attributes.
-func New(template string, options ...Option) (*VirtualDOM, error) {
+func New(template string, options ...option.Option) (*VirtualDOM, error) {
 	domBuilder := newBuilder()
 	templateBytes := []byte(template)
 	d := &VirtualDOM{
@@ -71,7 +72,7 @@ outer:
 			nodeSpan := dataSpan(node)
 			tagName, _ := node.TagName()
 			if v.filter != nil {
-				if _, ok := v.filter.tagFilter(string(tagName)); !ok {
+				if _, ok := v.filter.ElementFilter(string(tagName)); !ok {
 					continue outer
 				}
 			}
@@ -86,7 +87,7 @@ outer:
 		case html.EndTagToken:
 			tagName, _ := node.TagName()
 			if v.filter != nil {
-				if _, ok := v.filter.tagFilter(string(tagName)); !ok {
+				if _, ok := v.filter.ElementFilter(string(tagName)); !ok {
 					continue outer
 				}
 			}
@@ -103,14 +104,14 @@ func buildAllAttributes(template []byte, z *html.Tokenizer, builder *builder) {
 	}
 }
 
-func buildFilteredAttributes(template []byte, tagName []byte, z *html.Tokenizer, builder *builder, tagFilter *Filters) {
-	attributeFilter, ok := tagFilter.tagFilter(string(tagName))
+func buildFilteredAttributes(template []byte, tagName []byte, z *html.Tokenizer, builder *builder, tagFilter *option.Filters) {
+	attributeFilter, ok := tagFilter.ElementFilter(string(tagName))
 	if !ok {
 		return
 	}
 	attributes := attributesSpan(z)
 	for _, attribute := range attributes {
-		if ok := attributeFilter.matches(string(template[attribute[0].start:attribute[0].end])); !ok {
+		if ok := attributeFilter.Matches(string(template[attribute[0].start:attribute[0].end])); !ok {
 			continue
 		}
 		builder.attribute(template, attribute)

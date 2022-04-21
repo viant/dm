@@ -10,4 +10,7 @@ type AttributeSelector struct {
 }
 
 //ElementSelector matches Element by name
-type ElementSelector string
+type ElementSelector struct {
+	Name       string
+	Attributes []AttributeSelector
+}

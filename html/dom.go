@@ -2,6 +2,7 @@ package html
 
 import (
 	"bytes"
+	"github.com/viant/dm/option"
 )
 
 type (
@@ -20,7 +21,7 @@ type (
 )
 
 //DOM creates new DOM
-func (v *VirtualDOM) DOM(options ...Option) *DOM {
+func (v *VirtualDOM) DOM(options ...option.Option) *DOM {
 	session := &DOM{
 		dom: v,
 		mutations: mutations{
@@ -257,9 +258,9 @@ func (d *DOM) attributeValue(i int) []byte {
 	return d.buffer.buffer[d.attribute(i).valueStart()+d.attributesStart[i-1] : d.attribute(i).valueEnd()+d.attributesStart[i]]
 }
 
-func (d *DOM) apply(options []Option) {
-	for _, option := range options {
-		switch actual := option.(type) {
+func (d *DOM) apply(options []option.Option) {
+	for _, opt := range options {
+		switch actual := opt.(type) {
 		case *Buffer:
 			d.buffer = actual
 		}

@@ -40,20 +40,20 @@ func ExampleNew() {
 
 	aXml := schema.Xml()
 
-	elemIt := aXml.Select(xml.ElementSelector("foo"), xml.ElementSelector("id"))
+	elemIt := aXml.Select(xml.ElementSelector{Name: "foo"}, xml.ElementSelector{Name: "id"})
 	for elemIt.Has() {
 		elem, _ := elemIt.Next()
 		elem.SetValue("10")
 	}
 
-	elemIt = aXml.Select(xml.ElementSelector("foo"), xml.ElementSelector("address"))
+	elemIt = aXml.Select(xml.ElementSelector{Name: "foo"}, xml.ElementSelector{Name: "address"})
 	for elemIt.Has() {
 		elem, _ := elemIt.Next()
 		elem.SetValue("")
 		elem.AddElement("<new-elem>New element value</new-elem>")
 	}
 
-	elemIt = aXml.Select(xml.AttributeSelector{Name: "test", Value: "true"})
+	elemIt = aXml.Select(xml.ElementSelector{Name: "foo", Attributes: []xml.AttributeSelector{{Name: "test", Value: "true"}}})
 	for elemIt.Has() {
 		elem, _ := elemIt.Next()
 		elem.AddAttribute("attr1", "value1")

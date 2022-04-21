@@ -4,6 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/assertly"
 	"github.com/viant/dm/html"
+	"github.com/viant/dm/option"
 	"github.com/viant/toolbox"
 	"os"
 	"path"
@@ -30,7 +31,7 @@ func TestDOM(t *testing.T) {
 	testcases := []struct {
 		description   string
 		uri           string
-		attributes    *html.Filters
+		attributes    *option.Filters
 		newAttributes []attrSearch
 		innerHTMLGet  []innerHTMLSearch
 		innerHTMLSet  []innerHTMLSearch
@@ -80,8 +81,8 @@ func TestDOM(t *testing.T) {
 				{tag: "head", value: ``},
 			},
 
-			attributes: html.NewFilters(
-				html.NewFilter("img", "src"),
+			attributes: option.NewFilters(
+				option.NewFilter("img", "src"),
 			),
 		},
 		{
@@ -90,8 +91,8 @@ func TestDOM(t *testing.T) {
 				{tag: "script", value: ``},
 			},
 
-			attributes: html.NewFilters(
-				html.NewFilter("script"),
+			attributes: option.NewFilters(
+				option.NewFilter("script"),
 			),
 		},
 	}
@@ -199,7 +200,7 @@ func TestDOM_Element_NewAttribute(t *testing.T) {
 	assertly.AssertValues(t, string(result), render)
 }
 
-func readFromFile(path string, options ...html.Option) (*html.VirtualDOM, error) {
+func readFromFile(path string, options ...option.Option) (*html.VirtualDOM, error) {
 	template, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -229,9 +230,9 @@ func init() {
 <img src="abc.jpg" alt="some img"/>
 <iframe></iframe>
 </body>
-</html>`, html.NewFilters(
-		html.NewFilter("img", "src"),
-		html.NewFilter("iframe"),
+</html>`, option.NewFilters(
+		option.NewFilter("img", "src"),
+		option.NewFilter("iframe"),
 	))
 
 	if err != nil {

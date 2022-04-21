@@ -10,11 +10,6 @@ schema, err := xml.New(template)
 // handle error
 ```
 
-You can specify some options while creating `DOM`:
-* `BufferSize` - initial buffer size for each `DOM` session, `int` wrapper
-* `*Filters` - represents allowed elements and attributes, it is important to include all the path to the needed elements, also
-if in the path is present attribute, attribute owner also need to be indexed.
-
 ```go
 bufferSize := xml.BufferSize(1024)
 filter := xml.NewFilters(
@@ -117,3 +112,9 @@ Usage:
     //     <type>fType</type>
     // </foo>
 ```
+
+## Options
+Supported options:
+* `ElementsChangesSize` - in case of lazy rendering all the changes are buffered. In order to ignore lookup time with the Map,
+it is possible to update changes directly in the slice. Default is 30
+* `AttributesChangesSize` - same as above, but for the attributes. Default is 30

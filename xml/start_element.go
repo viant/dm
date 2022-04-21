@@ -15,9 +15,8 @@ type (
 		schema      *Schema
 		indent      []byte
 
-		elementsIndex          map[string][]int
-		attributeIndex         map[string]int
-		attributeChildrenIndex map[string][]int
+		elementsIndex  map[string][]int
+		attributeIndex map[string]int
 
 		attributesName   []string
 		attributes       []*attribute
@@ -53,7 +52,6 @@ func (s *startElement) append(child *startElement) {
 	}
 
 	s.elementsIndex[child.name] = append(s.elementsIndex[child.name], len(s.children))
-	s.indexChildAttributes(child)
 
 	s.children = append(s.children, child)
 	child.parent = s
@@ -89,12 +87,11 @@ func newStartElement(element *xml.StartElement, schema *Schema, elemIndex int, s
 		span: span{
 			start: startPosition,
 		},
-		name:                   elemName,
-		attributes:             attributes,
-		schema:                 schema,
-		nextSibling:            -1,
-		elementsIndex:          map[string][]int{},
-		attributeChildrenIndex: map[string][]int{},
+		name:          elemName,
+		attributes:    attributes,
+		schema:        schema,
+		nextSibling:   -1,
+		elementsIndex: map[string][]int{},
 	}
 
 	elem.init()
@@ -122,15 +119,6 @@ func (s *startElement) indexAttributes() {
 
 func (s *startElement) attributeValueSpan(attributeIndex int) *span {
 	return s.attributes[attributeIndex].spans[1]
-}
-
-func (s *startElement) indexChildAttributes(child *startElement) {
-	index := len(s.children)
-	for _, attr := range child.attributes {
-		s.attributeChildrenIndex[s.schema.templateSlice(attr.spans[0])] = append(s.attributeChildrenIndex[s.schema.templateSlice(attr.spans[0])], index)
-	}
-
-	s.childrenAttrSize += len(child.attributes)
 }
 
 func attributeOf(spans [2]*span, counter int) *attribute {

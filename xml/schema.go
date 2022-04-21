@@ -3,6 +3,7 @@ package xml
 import (
 	"bytes"
 	"encoding/xml"
+	"github.com/viant/dm/option"
 )
 
 //Schema represents Xml schema
@@ -10,13 +11,18 @@ type Schema struct {
 	template []byte
 	*builder
 	bufferSize int
+
+	attributesChangesSize int
+	elementsChangesSize   int
 }
 
 //New creates new Schema
-func New(xml string, options ...Option) (*Schema, error) {
+func New(xml string, options ...option.Option) (*Schema, error) {
 	vxml := &Schema{
-		template:   []byte(xml),
-		bufferSize: len(xml),
+		template:              []byte(xml),
+		bufferSize:            len(xml),
+		attributesChangesSize: prealocateSize,
+		elementsChangesSize:   prealocateSize,
 	}
 
 	vxml.builder = newBuilder(vxml)
@@ -58,13 +64,17 @@ func (s *Schema) init() error {
 	}
 }
 
-func (s *Schema) apply(options []Option) {
-	for _, option := range options {
-		switch actual := option.(type) {
-		case BufferSize:
+func (s *Schema) apply(options []option.Option) {
+	for _, opt := range options {
+		switch actual := opt.(type) {
+		case option.BufferSize:
 			s.bufferSize = int(actual)
-		case *Filters:
+		case *option.Filters:
 			s.builder.filters = actual
+		case AttributesChangesSize:
+			s.attributesChangesSize = int(actual)
+		case ElementsChangesSize:
+			s.elementsChangesSize = int(actual)
 		}
 	}
 }

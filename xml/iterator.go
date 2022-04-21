@@ -42,7 +42,7 @@ func (i *Iterator) Next() (*Element, error) {
 	}, nil
 }
 
-func newIterator(xml *Xml, selectors []Selector) *Iterator {
+func newIterator(xml *Xml, selectors []ElementSelector) *Iterator {
 	return &Iterator{
 		xml:     xml,
 		current: -1,

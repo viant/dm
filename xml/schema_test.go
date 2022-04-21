@@ -2,11 +2,14 @@ package xml_test
 
 import (
 	_ "embed"
+	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/viant/dm/option"
 	"github.com/viant/dm/xml"
 	"github.com/viant/toolbox"
 	"os"
 	"path"
+	"strconv"
 	"testing"
 )
 
@@ -14,35 +17,35 @@ func TestNew(t *testing.T) {
 	testLocation := toolbox.CallerDirectory(3)
 
 	type valuesSearch struct {
-		selectors []xml.Selector
+		selectors []xml.ElementSelector
 		expected  []string
 	}
 
 	type attributeSearch struct {
-		selectors []xml.Selector
+		selectors []xml.ElementSelector
 		attribute string
 		expected  []string
 	}
 
 	type attributeChange struct {
-		selectors []xml.Selector
+		selectors []xml.ElementSelector
 		attribute string
 		newValues []string
 	}
 
 	type newElement struct {
-		selectors []xml.Selector
+		selectors []xml.ElementSelector
 		values    []string
 	}
 
 	type newAttribute struct {
-		selectors []xml.Selector
+		selectors []xml.ElementSelector
 		keys      []string
 		values    []string
 	}
 
 	type newValue struct {
-		selectors []xml.Selector
+		selectors []xml.ElementSelector
 		values    []string
 	}
 
@@ -66,17 +69,17 @@ func TestNew(t *testing.T) {
 			description: "check element values",
 			valuesSearch: []valuesSearch{
 				{
-					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.ElementSelector("id")},
+					selectors: []xml.ElementSelector{{Name: "foo"}, {Name: "id"}},
 					expected:  []string{"1"},
 				},
 				{
-					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.ElementSelector("name")},
+					selectors: []xml.ElementSelector{{Name: "foo"}, {Name: "name"}},
 					expected:  []string{"foo name"},
 				},
 			},
 			attributesSearch: []attributeSearch{
 				{
-					selectors: []xml.Selector{xml.ElementSelector("foo")},
+					selectors: []xml.ElementSelector{{Name: "foo"}},
 					attribute: "test",
 					expected:  []string{"true"},
 				},
@@ -87,12 +90,12 @@ func TestNew(t *testing.T) {
 			description: "change attribute value",
 			attributesChanges: []attributeChange{
 				{
-					selectors: []xml.Selector{xml.ElementSelector("foo")},
+					selectors: []xml.ElementSelector{{Name: "foo"}},
 					attribute: "id",
 					newValues: []string{"123"},
 				},
 				{
-					selectors: []xml.Selector{xml.ElementSelector("foo")},
+					selectors: []xml.ElementSelector{{Name: "foo"}},
 					attribute: "name",
 					newValues: []string{"foo name changed"},
 				},
@@ -103,16 +106,16 @@ func TestNew(t *testing.T) {
 			description: "add new element",
 			newElements: []newElement{
 				{
-					selectors: []xml.Selector{xml.AttributeSelector{
-						Name:  "test",
-						Value: "true",
+					selectors: []xml.ElementSelector{{
+						Name:       "foo",
+						Attributes: []xml.AttributeSelector{{Name: "test", Value: "true"}},
 					}},
 					values: []string{"<price>123.5</price>"},
 				},
 				{
-					selectors: []xml.Selector{xml.AttributeSelector{
-						Name:  "test",
-						Value: "true",
+					selectors: []xml.ElementSelector{{
+						Name:       "foo",
+						Attributes: []xml.AttributeSelector{{Name: "test", Value: "true"}},
 					}},
 					values: []string{"<quantity>550</quantity>"},
 				},
@@ -123,17 +126,17 @@ func TestNew(t *testing.T) {
 			description: "add new attribute",
 			newAttributes: []newAttribute{
 				{
-					selectors: []xml.Selector{xml.AttributeSelector{
-						Name:  "test",
-						Value: "true",
+					selectors: []xml.ElementSelector{{
+						Name:       "foo",
+						Attributes: []xml.AttributeSelector{{Name: "test", Value: "true"}},
 					}},
 					keys:   []string{"price"},
 					values: []string{"123"},
 				},
 				{
-					selectors: []xml.Selector{xml.AttributeSelector{
-						Name:  "test",
-						Value: "true",
+					selectors: []xml.ElementSelector{{
+						Name:       "foo",
+						Attributes: []xml.AttributeSelector{{Name: "test", Value: "true"}},
 					}},
 					keys:   []string{"quantity"},
 					values: []string{"50.5"},
@@ -145,15 +148,15 @@ func TestNew(t *testing.T) {
 			description: "update element value without filters",
 			newValues: []newValue{
 				{
-					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.ElementSelector("id")},
+					selectors: []xml.ElementSelector{{Name: "foo"}, {Name: "id"}},
 					values:    []string{"2"},
 				},
 				{
-					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.ElementSelector("name")},
+					selectors: []xml.ElementSelector{{Name: "foo"}, {Name: "name"}},
 					values:    []string{"foo"},
 				},
 				{
-					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.ElementSelector("address")},
+					selectors: []xml.ElementSelector{{Name: "foo"}, {Name: "address"}},
 					values:    []string{""},
 				},
 			},
@@ -163,15 +166,15 @@ func TestNew(t *testing.T) {
 			description: "update element value with filters",
 			newValues: []newValue{
 				{
-					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.ElementSelector("id")},
+					selectors: []xml.ElementSelector{{Name: "foo"}, {Name: "id"}},
 					values:    []string{"2"},
 				},
 				{
-					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.ElementSelector("name")},
+					selectors: []xml.ElementSelector{{Name: "foo"}, {Name: "name"}},
 					values:    []string{"foo"},
 				},
 				{
-					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.ElementSelector("address")},
+					selectors: []xml.ElementSelector{{Name: "foo"}, {Name: "address"}},
 					values:    []string{""},
 				},
 			},
@@ -187,11 +190,11 @@ func TestNew(t *testing.T) {
 			description: "new value, access attributes via map, with filters",
 			newValues: []newValue{
 				{
-					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.AttributeSelector{Name: "attr1", Value: "abc"}},
-					values:    []string{"50", "100"},
+					selectors: []xml.ElementSelector{{Name: "foo"}, {Name: "prop1", Attributes: []xml.AttributeSelector{{Name: "attr1", Value: "abc"}}}},
+					values:    []string{"50"},
 				},
 				{
-					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.AttributeSelector{Name: "attr4", Value: "jkl"}},
+					selectors: []xml.ElementSelector{{Name: "foo"}, {Name: "prop3", Attributes: []xml.AttributeSelector{{Name: "attr4", Value: "jkl"}}}},
 					values:    []string{"125"},
 				},
 			},
@@ -208,19 +211,20 @@ func TestNew(t *testing.T) {
 			description: "new value, access attributes via map, without filters",
 			newValues: []newValue{
 				{
-					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.AttributeSelector{Name: "attr1", Value: "abc"}},
-					values:    []string{"50", "100"},
+					selectors: []xml.ElementSelector{{Name: "foo"}, {Name: "prop1", Attributes: []xml.AttributeSelector{{Name: "attr1", Value: "abc"}}}},
+					values:    []string{"50"},
 				},
 				{
-					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.AttributeSelector{Name: "attr4", Value: "jkl"}},
+					selectors: []xml.ElementSelector{{Name: "foo"}, {Name: "prop3", Attributes: []xml.AttributeSelector{{Name: "attr4", Value: "jkl"}}}},
 					values:    []string{"125"},
 				},
 			},
 		},
 	}
 
-	//for _, testcase := range testcases[len(testcases)-1:] {
-	for _, testcase := range testcases {
+	//for i, testcase := range testcases[len(testcases)-1:] {
+	for i, testcase := range testcases {
+		fmt.Println("Running testcase: " + strconv.Itoa(i))
 		templatePath := path.Join(testLocation, "testdata", testcase.uri)
 		schema, err := readFromFile(path.Join(templatePath, "index.xml"), testcase.filters)
 		if !assert.Nil(t, err, testcase.description) {
@@ -337,7 +341,7 @@ var benchTemplate string
 var benchSchema *xml.Schema
 
 func init() {
-	bufferSize := xml.BufferSize(1024)
+	bufferSize := option.BufferSize(1024)
 	filters := xml.NewFilters(
 		xml.NewFilter("foo", "test"),
 		xml.NewFilter("id"),
@@ -352,20 +356,20 @@ func BenchmarkXml_Render(b *testing.B) {
 	var aXml *xml.Xml
 	for i := 0; i < b.N; i++ {
 		aXml = benchSchema.Xml()
-		elemIt := aXml.Select(xml.ElementSelector("foo"), xml.ElementSelector("id"))
+		elemIt := aXml.Select(xml.ElementSelector{Name: "foo"}, xml.ElementSelector{Name: "Id"})
 		for elemIt.Has() {
 			elem, _ := elemIt.Next()
 			elem.SetValue("10")
 		}
 
-		elemIt = aXml.Select(xml.ElementSelector("foo"), xml.ElementSelector("address"))
+		elemIt = aXml.Select(xml.ElementSelector{Name: "foo"}, xml.ElementSelector{Name: "address"})
 		for elemIt.Has() {
 			elem, _ := elemIt.Next()
 			elem.SetValue("")
 			elem.AddElement("<new-elem>New element value</new-elem>")
 		}
 
-		elemIt = aXml.Select(xml.AttributeSelector{Name: "test", Value: "true"})
+		elemIt = aXml.Select(xml.ElementSelector{Name: "foo", Attributes: []xml.AttributeSelector{{Name: "test", Value: "true"}}})
 		for elemIt.Has() {
 			elem, _ := elemIt.Next()
 			elem.AddAttribute("attr1", "value1")

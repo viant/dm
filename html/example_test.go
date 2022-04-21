@@ -1,6 +1,9 @@
 package html
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/viant/dm/option"
+)
 
 func ExampleNew() {
 	template := `
@@ -22,12 +25,12 @@ func ExampleNew() {
 		return
 	}
 
-	filter := NewFilters(
-		NewFilter("div", "hidden"),
-		NewFilter("img", "src"),
+	filter := option.NewFilters(
+		option.NewFilter("div", "hidden"),
+		option.NewFilter("img", "src"),
 	)
 
-	bufferSize := BufferSize(1024)
+	bufferSize := option.BufferSize(1024)
 	dom := vdom.DOM(filter, bufferSize)
 
 	elemIt := dom.Select("div", "hidden")

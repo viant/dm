@@ -1,4 +1,4 @@
-package html
+package option
 
 import "strings"
 
@@ -19,20 +19,16 @@ type (
 
 //Init initializes Filters
 func (f *Filters) Init() {
-	if len(f.Tags) < 5 {
-		return
-	}
-
 	f.index = map[string]int{}
 	for i, filter := range f.Tags {
 		f.index[filter.Name] = i
 	}
 }
 
-func (f *Filters) tagFilter(tagName string) (*Filter, bool) {
+func (f *Filters) ElementFilter(tagName string) (*Filter, bool) {
 	tagName = strings.ToLower(tagName)
 
-	if f.index != nil {
+	if len(f.Tags) >= 5 {
 		tagFilterIndex, ok := f.index[tagName]
 		if ok == false {
 			return nil, false
@@ -48,6 +44,25 @@ func (f *Filters) tagFilter(tagName string) (*Filter, bool) {
 	}
 
 	return nil, false
+}
+
+func (f *Filters) Add(filters ...*Filter) *Filters {
+	for i, filter := range filters {
+		elementFilter, ok := f.ElementFilter(filter.Name)
+		if !ok {
+			f.add(filters[i])
+			continue
+		}
+
+		elementFilter.addAttributes(filters[i].Attributes)
+	}
+
+	return f
+}
+
+func (f *Filters) add(filter *Filter) {
+	f.index[filter.Name] = len(f.Tags)
+	f.Tags = append(f.Tags, filter)
 }
 
 //NewFilters creates Filters with given TagFilters
@@ -79,10 +94,6 @@ func NewFilter(tag string, attributes ...string) *Filter {
 
 //Init initializes Filter
 func (f *Filter) Init() {
-	if len(f.Attributes) < 5 {
-		return
-	}
-
 	f.index = map[string]int{}
 
 	for i, attribute := range f.Attributes {
@@ -90,10 +101,10 @@ func (f *Filter) Init() {
 	}
 }
 
-func (f *Filter) matches(attributeName string) bool {
+func (f *Filter) Matches(attributeName string) bool {
 	attributeName = strings.ToLower(attributeName)
 
-	if f.index != nil {
+	if len(f.Attributes) >= 5 {
 		_, ok := f.index[attributeName]
 		return ok
 	}
@@ -105,4 +116,15 @@ func (f *Filter) matches(attributeName string) bool {
 	}
 
 	return false
+}
+
+func (f *Filter) addAttributes(attributes []string) {
+	for i, attribute := range attributes {
+		if f.Matches(attribute) {
+			continue
+		}
+
+		f.index[attributes[i]] = len(f.Attributes)
+		f.Attributes = append(f.Attributes, attribute)
+	}
 }

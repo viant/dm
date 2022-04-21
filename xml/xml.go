@@ -96,7 +96,7 @@ func (x *Xml) renderAttribute(elem *startElement, attributeIndex int) {
 }
 
 //Select returns Iterator over matching Elements
-func (x *Xml) Select(selectors ...Selector) *Iterator {
+func (x *Xml) Select(selectors ...ElementSelector) *Iterator {
 	return newIterator(x, selectors)
 }
 

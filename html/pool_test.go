@@ -3,6 +3,7 @@ package html
 import (
 	_ "embed"
 	"github.com/stretchr/testify/assert"
+	"github.com/viant/dm/option"
 	"strconv"
 	"sync"
 	"testing"
@@ -38,7 +39,7 @@ func TestNewPool(t *testing.T) {
 	}
 
 	for _, testcase := range testcases {
-		vdom, err := New(poolTemplate, BufferSize(testcase.bufferSize))
+		vdom, err := New(poolTemplate, option.BufferSize(testcase.bufferSize))
 		if !assert.Nil(t, err, testcase.description) {
 			continue
 		}
