@@ -1,6 +1,7 @@
 package xml_test
 
 import (
+	_ "embed"
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/dm/xml"
 	"github.com/viant/toolbox"
@@ -328,4 +329,63 @@ func readFromFile(path string, filters *xml.Filters) (*xml.Schema, error) {
 		return nil, err
 	}
 	return schema, nil
+}
+
+//Benchmarks
+//go:embed testdata/xml006/index.xml
+var benchTemplate string
+var benchSchema *xml.Schema
+
+func init() {
+	bufferSize := xml.BufferSize(1024)
+	filters := xml.NewFilters(
+		xml.NewFilter("foo", "test"),
+		xml.NewFilter("id"),
+		xml.NewFilter("name"),
+		xml.NewFilter("address"),
+	)
+	benchSchema, _ = xml.New(benchTemplate, bufferSize, filters)
+}
+
+func BenchmarkXml_Render(b *testing.B) {
+	b.ReportAllocs()
+	var aXml *xml.Xml
+	for i := 0; i < b.N; i++ {
+		aXml = benchSchema.Xml()
+		elemIt := aXml.Select(xml.ElementSelector("foo"), xml.ElementSelector("id"))
+		for elemIt.Has() {
+			elem, _ := elemIt.Next()
+			elem.SetValue("10")
+		}
+
+		elemIt = aXml.Select(xml.ElementSelector("foo"), xml.ElementSelector("address"))
+		for elemIt.Has() {
+			elem, _ := elemIt.Next()
+			elem.SetValue("")
+			elem.AddElement("<new-elem>New element value</new-elem>")
+		}
+
+		elemIt = aXml.Select(xml.AttributeSelector{Name: "test", Value: "true"})
+		for elemIt.Has() {
+			elem, _ := elemIt.Next()
+			elem.AddAttribute("attr1", "value1")
+			attribute, ok := elem.Attribute("test")
+			if !ok {
+				continue
+			}
+			attribute.Set("new test value")
+		}
+	}
+
+	assert.Equal(b, `<?xml version="1.0" encoding="UTF-8"?>
+<foo test="new test value" attr1="value1">
+    <id>10</id>
+    <name>foo name</name>
+    <address>
+        <new-elem>New element value</new-elem>
+    </address>
+    <quantity>123</quantity>
+    <price>50.5</price>
+    <type>fType</type>
+</foo>`, aXml.Render())
 }
