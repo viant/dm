@@ -1,9 +1,9 @@
-package dm_test
+package html_test
 
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/assertly"
-	"github.com/viant/dm"
+	"github.com/viant/dm/html"
 	"github.com/viant/toolbox"
 	"os"
 	"path"
@@ -30,7 +30,7 @@ func TestDOM(t *testing.T) {
 	testcases := []struct {
 		description   string
 		uri           string
-		attributes    *dm.Filters
+		attributes    *html.Filters
 		newAttributes []attrSearch
 		innerHTMLGet  []innerHTMLSearch
 		innerHTMLSet  []innerHTMLSearch
@@ -80,8 +80,8 @@ func TestDOM(t *testing.T) {
 				{tag: "head", value: ``},
 			},
 
-			attributes: dm.NewFilters(
-				dm.NewFilter("img", "src"),
+			attributes: html.NewFilters(
+				html.NewFilter("img", "src"),
 			),
 		},
 		{
@@ -90,8 +90,8 @@ func TestDOM(t *testing.T) {
 				{tag: "script", value: ``},
 			},
 
-			attributes: dm.NewFilters(
-				dm.NewFilter("script"),
+			attributes: html.NewFilters(
+				html.NewFilter("script"),
 			),
 		},
 	}
@@ -199,13 +199,13 @@ func TestDOM_Element_NewAttribute(t *testing.T) {
 	assertly.AssertValues(t, string(result), render)
 }
 
-func readFromFile(path string, options ...dm.Option) (*dm.VirtualDOM, error) {
+func readFromFile(path string, options ...html.Option) (*html.VirtualDOM, error) {
 	template, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	dom, err := dm.New(string(template), options...)
+	dom, err := html.New(string(template), options...)
 	if err != nil {
 		return nil, err
 	}
@@ -213,11 +213,11 @@ func readFromFile(path string, options ...dm.Option) (*dm.VirtualDOM, error) {
 }
 
 //Benchmarks
-var vdom *dm.VirtualDOM
+var vdom *html.VirtualDOM
 
 func init() {
 	var err error
-	vdom, err = dm.New(`<!DOCTYPE html>
+	vdom, err = html.New(`<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -229,9 +229,9 @@ func init() {
 <img src="abc.jpg" alt="some img"/>
 <iframe></iframe>
 </body>
-</html>`, dm.NewFilters(
-		dm.NewFilter("img", "src"),
-		dm.NewFilter("iframe"),
+</html>`, html.NewFilters(
+		html.NewFilter("img", "src"),
+		html.NewFilter("iframe"),
 	))
 
 	if err != nil {

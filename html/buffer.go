@@ -1,4 +1,4 @@
-package dm
+package html
 
 //Buffer hold the current VirtualDOM value
 type Buffer struct {
