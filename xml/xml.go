@@ -4,16 +4,16 @@ type (
 	Xml struct {
 		schema *Schema
 		buffer *Buffer
-		mutations
+		changes
 	}
 )
 
 //Xml returns new *Xml
 func (s *Schema) Xml() *Xml {
 	return &Xml{
-		schema:    s,
-		buffer:    NewBuffer(s.bufferSize),
-		mutations: newMutations(s.vxml),
+		schema:  s,
+		buffer:  NewBuffer(s.bufferSize),
+		changes: newMutations(s.schema),
 	}
 }
 
@@ -101,7 +101,7 @@ func (x *Xml) Select(selectors ...Selector) *Iterator {
 }
 
 func (x *Xml) renderAttributeValue(attribute *attribute) {
-	value, ok := x.mutations.checkAttributeChanges(attribute.index)
+	value, ok := x.changes.checkAttributeChanges(attribute.index)
 	if ok {
 		x.buffer.appendBytes([]byte(value))
 	} else {
@@ -110,7 +110,7 @@ func (x *Xml) renderAttributeValue(attribute *attribute) {
 }
 
 func (x *Xml) renderNewElements(elem *startElement) {
-	mutation, ok := x.mutations.elementMutations(elem.elemIndex)
+	mutation, ok := x.changes.elementMutations(elem.elemIndex)
 	if !ok {
 		return
 	}
@@ -124,7 +124,7 @@ func (x *Xml) renderNewElements(elem *startElement) {
 }
 
 func (x *Xml) renderNewAttributes(elem *startElement) {
-	mutation, ok := x.mutations.elementMutations(elem.elemIndex)
+	mutation, ok := x.changes.elementMutations(elem.elemIndex)
 	if !ok {
 		return
 	}
@@ -139,7 +139,7 @@ func (x *Xml) renderNewAttributes(elem *startElement) {
 }
 
 func (x *Xml) renderElemValue(elem *startElement, onlyValue bool) (int, bool) {
-	elemMutation, ok := x.mutations.elementMutations(elem.elemIndex)
+	elemMutation, ok := x.changes.elementMutations(elem.elemIndex)
 	elemStart := elem.start
 	if ok && elemMutation.valueChanged {
 		x.buffer.appendBytes([]byte(elemMutation.value))

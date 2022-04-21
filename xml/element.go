@@ -27,15 +27,15 @@ func (e *Element) Attribute(attribute string) (*Attribute, bool) {
 
 //AddElement adds new Element value
 func (e *Element) AddElement(value string) {
-	e.xml.mutations.addElement(e.startElement.elemIndex, value)
+	e.xml.changes.addElement(e.startElement.elemIndex, value)
 }
 
 //AddAttribute adds new Attribute
 func (e *Element) AddAttribute(key string, value string) {
-	e.xml.mutations.addAttribute(e.startElement.elemIndex, key, value)
+	e.xml.changes.addAttribute(e.startElement.elemIndex, key, value)
 }
 
 //SetValue updates Element value
 func (e *Element) SetValue(value string) {
-	e.xml.mutations.setValue(e.startElement.elemIndex, value)
+	e.xml.changes.setValue(e.startElement.elemIndex, value)
 }

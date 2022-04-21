@@ -1,20 +1,20 @@
 package xml
 
 type (
-	mutations struct {
-		attributes      []*attributeMutation
+	changes struct {
+		attributes      []*attributeChanges
 		attributesIndex map[int]int
 
-		elements      []*elementMutation
+		elements      []*elementChanges
 		elementsIndex map[int]int
 	}
 
-	attributeMutation struct {
+	attributeChanges struct {
 		newValue string
 		index    int
 	}
 
-	elementMutation struct {
+	elementChanges struct {
 		index         int
 		value         string
 		newElements   []*newElement
@@ -32,13 +32,13 @@ type (
 	}
 )
 
-func (m *mutations) updateAttribute(index int, value string) {
+func (m *changes) updateAttribute(index int, value string) {
 	if m.attributesIndex == nil {
-		m.attributes[index] = &attributeMutation{newValue: value, index: index}
+		m.attributes[index] = &attributeChanges{newValue: value, index: index}
 	} else {
 		sliceIndex, ok := m.attributesIndex[index]
 		if !ok {
-			m.attributes = append(m.attributes, &attributeMutation{newValue: value, index: index})
+			m.attributes = append(m.attributes, &attributeChanges{newValue: value, index: index})
 			m.attributesIndex[index] = len(m.attributes) - 1
 		} else {
 			m.attributes[sliceIndex].newValue = value
@@ -46,7 +46,7 @@ func (m *mutations) updateAttribute(index int, value string) {
 	}
 }
 
-func (m *mutations) checkAttributeChanges(index int) (string, bool) {
+func (m *changes) checkAttributeChanges(index int) (string, bool) {
 	if m.attributesIndex != nil {
 		if len(m.attributes) < mapSize {
 			for _, mutation := range m.attributes {
@@ -74,14 +74,14 @@ func (m *mutations) checkAttributeChanges(index int) (string, bool) {
 	return mutation.newValue, true
 }
 
-func (m *mutations) addElement(index int, value string) {
+func (m *changes) addElement(index int, value string) {
 	mutation, ok := m.elementMutations(index)
 	if ok {
 		mutation.newElements = append(mutation.newElements, elementOf(value))
 		return
 	}
 
-	elemMutation := &elementMutation{newElements: []*newElement{elementOf(value)}, index: index}
+	elemMutation := &elementChanges{newElements: []*newElement{elementOf(value)}, index: index}
 	m.addElementMutation(elemMutation)
 }
 
@@ -91,7 +91,7 @@ func elementOf(value string) *newElement {
 	}
 }
 
-func (m *mutations) elementMutations(index int) (*elementMutation, bool) {
+func (m *changes) elementMutations(index int) (*elementChanges, bool) {
 	if m.elementsIndex != nil {
 		if len(m.elements) < mapSize {
 			for _, element := range m.elements {
@@ -113,7 +113,7 @@ func (m *mutations) elementMutations(index int) (*elementMutation, bool) {
 	return m.elements[index], m.elements[index] != nil
 }
 
-func (m *mutations) addAttribute(elemIndex int, key string, value string) {
+func (m *changes) addAttribute(elemIndex int, key string, value string) {
 	elemMutation, ok := m.elementMutations(elemIndex)
 	newAttr := &newAttribute{
 		key:   key,
@@ -125,7 +125,7 @@ func (m *mutations) addAttribute(elemIndex int, key string, value string) {
 		return
 	}
 
-	elemMutation = &elementMutation{
+	elemMutation = &elementChanges{
 		index:         elemIndex,
 		newAttributes: []*newAttribute{newAttr},
 	}
@@ -133,7 +133,7 @@ func (m *mutations) addAttribute(elemIndex int, key string, value string) {
 	m.addElementMutation(elemMutation)
 }
 
-func (m *mutations) addElementMutation(mutation *elementMutation) {
+func (m *changes) addElementMutation(mutation *elementChanges) {
 	if m.elementsIndex == nil {
 		m.elements[mutation.index] = mutation
 	} else {
@@ -142,7 +142,7 @@ func (m *mutations) addElementMutation(mutation *elementMutation) {
 	}
 }
 
-func (m *mutations) setValue(elemIndex int, value string) {
+func (m *changes) setValue(elemIndex int, value string) {
 	mutation, ok := m.elementMutations(elemIndex)
 	if ok {
 		mutation.value = value
@@ -151,7 +151,7 @@ func (m *mutations) setValue(elemIndex int, value string) {
 		return
 	}
 
-	mutation = &elementMutation{
+	mutation = &elementChanges{
 		index:        elemIndex,
 		value:        value,
 		valueChanged: true,
@@ -159,24 +159,24 @@ func (m *mutations) setValue(elemIndex int, value string) {
 	m.addElementMutation(mutation)
 }
 
-func newMutations(vxml *Schema) mutations {
+func newMutations(vxml *Schema) changes {
 	var attributesIndex map[int]int
-	var attributesMutations []*attributeMutation
+	var attributesMutations []*attributeChanges
 	if vxml.builder.attributeCounter < prealocateSize {
-		attributesMutations = make([]*attributeMutation, vxml.builder.attributeCounter)
+		attributesMutations = make([]*attributeChanges, vxml.builder.attributeCounter)
 	} else {
 		attributesIndex = map[int]int{}
 	}
 
-	var elementsMutations []*elementMutation
+	var elementsMutations []*elementChanges
 	var elementsMutationsIndex map[int]int
 	if len(vxml.elements) < prealocateSize {
-		elementsMutations = make([]*elementMutation, len(vxml.elements))
+		elementsMutations = make([]*elementChanges, len(vxml.elements))
 	} else {
 		elementsMutationsIndex = map[int]int{}
 	}
 
-	return mutations{
+	return changes{
 		attributes:      attributesMutations,
 		attributesIndex: attributesIndex,
 		elements:        elementsMutations,

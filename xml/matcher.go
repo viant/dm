@@ -52,6 +52,7 @@ func (m *matcher) matchAny() (*startElement, bool) {
 			return m.findElement(string(actual))
 		}
 
+		m.maxSize[m.index] = len(m.currRoot.children)
 		for ; m.indexes[m.index] < len(m.currRoot.children); m.indexes[m.index]++ {
 			if element := m.currRoot.children[m.indexes[m.index]]; element.name == string(actual) {
 				return element, true
@@ -63,6 +64,7 @@ func (m *matcher) matchAny() (*startElement, bool) {
 			return m.findAttribute(&actual)
 		}
 
+		m.maxSize[m.index] = len(m.currRoot.children)
 		for ; m.indexes[m.index] < len(m.currRoot.children); m.indexes[m.index]++ {
 			startElem := m.currRoot.children[m.indexes[m.index]]
 			attrIndex, ok := startElem.attrByName(actual.Name)

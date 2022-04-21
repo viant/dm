@@ -63,6 +63,8 @@ func (s *Schema) apply(options []Option) {
 		switch actual := option.(type) {
 		case BufferSize:
 			s.bufferSize = int(actual)
+		case *Filters:
+			s.builder.filters = actual
 		}
 	}
 }

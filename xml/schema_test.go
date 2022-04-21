@@ -54,14 +54,15 @@ func TestNew(t *testing.T) {
 		newElements       []newElement
 		newAttributes     []newAttribute
 		newValues         []newValue
+		filters           *xml.Filters
 	}{
 		{
 			uri:         "xml001",
-			description: "xml001",
+			description: "raw template without changes",
 		},
 		{
 			uri:         "xml002",
-			description: "xml002",
+			description: "check element values",
 			valuesSearch: []valuesSearch{
 				{
 					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.ElementSelector("id")},
@@ -82,7 +83,7 @@ func TestNew(t *testing.T) {
 		},
 		{
 			uri:         "xml003",
-			description: "xml003",
+			description: "change attribute value",
 			attributesChanges: []attributeChange{
 				{
 					selectors: []xml.Selector{xml.ElementSelector("foo")},
@@ -98,7 +99,7 @@ func TestNew(t *testing.T) {
 		},
 		{
 			uri:         "xml004",
-			description: "xml004",
+			description: "add new element",
 			newElements: []newElement{
 				{
 					selectors: []xml.Selector{xml.AttributeSelector{
@@ -118,7 +119,7 @@ func TestNew(t *testing.T) {
 		},
 		{
 			uri:         "xml005",
-			description: "xml005",
+			description: "add new attribute",
 			newAttributes: []newAttribute{
 				{
 					selectors: []xml.Selector{xml.AttributeSelector{
@@ -140,7 +141,7 @@ func TestNew(t *testing.T) {
 		},
 		{
 			uri:         "xml006",
-			description: "xml006",
+			description: "update element value without filters",
 			newValues: []newValue{
 				{
 					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.ElementSelector("id")},
@@ -157,8 +158,53 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
+			uri:         "xml006",
+			description: "update element value with filters",
+			newValues: []newValue{
+				{
+					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.ElementSelector("id")},
+					values:    []string{"2"},
+				},
+				{
+					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.ElementSelector("name")},
+					values:    []string{"foo"},
+				},
+				{
+					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.ElementSelector("address")},
+					values:    []string{""},
+				},
+			},
+			filters: xml.NewFilters(
+				xml.NewFilter("foo"),
+				xml.NewFilter("id"),
+				xml.NewFilter("name"),
+				xml.NewFilter("address"),
+			),
+		},
+		{
 			uri:         "xml007",
-			description: "xml007",
+			description: "new value, access attributes via map, with filters",
+			newValues: []newValue{
+				{
+					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.AttributeSelector{Name: "attr1", Value: "abc"}},
+					values:    []string{"50", "100"},
+				},
+				{
+					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.AttributeSelector{Name: "attr4", Value: "jkl"}},
+					values:    []string{"125"},
+				},
+			},
+			filters: xml.NewFilters(
+				xml.NewFilter("foo"),
+				xml.NewFilter("prop1", "attr1"),
+				xml.NewFilter("prop3", "attr4"),
+				xml.NewFilter("prop4", "attr1"),
+				xml.NewFilter("prop5", "attr1"),
+			),
+		},
+		{
+			uri:         "xml007",
+			description: "new value, access attributes via map, without filters",
 			newValues: []newValue{
 				{
 					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.AttributeSelector{Name: "attr1", Value: "abc"}},
@@ -175,13 +221,13 @@ func TestNew(t *testing.T) {
 	//for _, testcase := range testcases[len(testcases)-1:] {
 	for _, testcase := range testcases {
 		templatePath := path.Join(testLocation, "testdata", testcase.uri)
-		vxml, err := readFromFile(path.Join(templatePath, "index.xml"))
+		schema, err := readFromFile(path.Join(templatePath, "index.xml"), testcase.filters)
 		if !assert.Nil(t, err, testcase.description) {
 			t.Fail()
 			continue
 		}
 
-		xml := vxml.Xml()
+		xml := schema.Xml()
 
 		for _, search := range testcase.valuesSearch {
 			it := xml.Select(search.selectors...)
@@ -271,13 +317,13 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func readFromFile(path string) (*xml.Schema, error) {
+func readFromFile(path string, filters *xml.Filters) (*xml.Schema, error) {
 	template, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	dom, err := xml.New(string(template))
+	dom, err := xml.New(string(template), filters)
 	if err != nil {
 		return nil, err
 	}

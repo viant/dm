@@ -9,7 +9,7 @@ type Attribute struct {
 
 //Value returns attribute value
 func (a *Attribute) Value() string {
-	change, ok := a.xml.mutations.checkAttributeChanges(a.index)
+	change, ok := a.xml.changes.checkAttributeChanges(a.index)
 	if ok {
 		return change
 	} else {
@@ -19,5 +19,5 @@ func (a *Attribute) Value() string {
 
 //Set updates attribute value
 func (a *Attribute) Set(value string) {
-	a.xml.mutations.updateAttribute(a.index, value)
+	a.xml.changes.updateAttribute(a.index, value)
 }
