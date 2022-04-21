@@ -121,6 +121,10 @@ func (x *Xml) renderNewElements(elem *startElement) {
 		}
 		x.buffer.appendBytes([]byte(element.value))
 	}
+
+	if len(mutation.newElements) > 0 && mutation.valueChanged {
+		x.buffer.appendBytes(elem.parent.indent)
+	}
 }
 
 func (x *Xml) renderNewAttributes(elem *startElement) {

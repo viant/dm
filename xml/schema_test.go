@@ -175,7 +175,7 @@ func TestNew(t *testing.T) {
 				},
 			},
 			filters: xml.NewFilters(
-				xml.NewFilter("foo"),
+				xml.NewFilter("foo", "test"),
 				xml.NewFilter("id"),
 				xml.NewFilter("name"),
 				xml.NewFilter("address"),
@@ -323,9 +323,9 @@ func readFromFile(path string, filters *xml.Filters) (*xml.Schema, error) {
 		return nil, err
 	}
 
-	dom, err := xml.New(string(template), filters)
+	schema, err := xml.New(string(template), filters)
 	if err != nil {
 		return nil, err
 	}
-	return dom, nil
+	return schema, nil
 }

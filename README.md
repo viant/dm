@@ -15,32 +15,32 @@ Please refer to [`CHANGELOG.md`](CHANGELOG.md) if you encounter breaking changes
 In order to change to update the DOM, you need to create `DOM` representation. `DOM` representation can be shared across the app: 
 ```go
 template := []byte("<html>...</html>")
-dom, err := dm.New(template)
+vdom, err := dm.New(template)
 // handle error
 ```
 
 You can specify some options while creating `DOM`:
 * `BufferSize` - initial buffer size for each `DOM` session, `int` wrapper
-* `Filter` - represents allowed tags and attributes
-the inner - attributes. The value of inner map is not important, if value is specified in the map, the attribute may be indexed.
+* `*Filters` - represents allowed tags and attributes
+
 ```go
 bufferSize := dm.BufferSize(1024)
-filter := dm.NewFilter(
-	dm.NewTagFilter("div", "class"), 
-	dm.NewTagFilter("img", "src"),
+filter := dm.NewFilters(
+	dm.NewFilter("div", "class"), 
+	dm.NewFilter("img", "src"),
 	)
-dom, err := dm.New(template, bufferSize, filter)
+vdom, err := dm.New(template, bufferSize, filter)
 // handle error
 ```
 
-Then you need to create a `Session`:
+Then you need to create a `DOM`:
 ```go
-newTemplate := dom.Template()
+newTemplate := vdom.DOM()
 templateWithBuffer := dom.Template(dm.NewBuffer(1024))
 ```
 If you don't provide a `Buffer`, will be created one with `BufferSize` specified while creating `DOM`
 
-Now you can get/set Attribute, get/set InnerHTML either by using selectors, or by index. 
+Now you can get/set Attribute, get/set InnerHTML by using selectors. 
 
 Selectors order: `Tag` -> `Attribute` -> `Attribute value`. Selectors are optional, it means if you don't specify `Attribute` only 
 tag will be checked. 
