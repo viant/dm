@@ -29,8 +29,8 @@ func New(xml string, options ...Option) (*Schema, error) {
 	return vxml, nil
 }
 
-func (v *Schema) init() error {
-	decoder := xml.NewDecoder(bytes.NewReader(v.template))
+func (s *Schema) init() error {
+	decoder := xml.NewDecoder(bytes.NewReader(s.template))
 	var prevOffset int
 	for {
 		token, err := decoder.Token()
@@ -44,25 +44,29 @@ func (v *Schema) init() error {
 
 		switch actual := token.(type) {
 		case xml.StartElement:
-			err := v.builder.addElement(actual, int(decoder.InputOffset()), v.template[prevOffset:decoder.InputOffset()], prevOffset)
+			err := s.builder.addElement(actual, int(decoder.InputOffset()), s.template[prevOffset:decoder.InputOffset()], prevOffset)
 			if err != nil {
 				return err
 			}
 		case xml.EndElement:
-			v.builder.closeElement()
+			s.builder.closeElement()
 		case xml.CharData:
-			v.builder.addCharData(int(decoder.InputOffset()), actual)
+			s.builder.addCharData(int(decoder.InputOffset()), actual)
 		}
 
 		prevOffset = int(decoder.InputOffset())
 	}
 }
 
-func (v *Schema) apply(options []Option) {
+func (s *Schema) apply(options []Option) {
 	for _, option := range options {
 		switch actual := option.(type) {
 		case BufferSize:
-			v.bufferSize = int(actual)
+			s.bufferSize = int(actual)
 		}
 	}
+}
+
+func (s *Schema) templateSlice(span *span) string {
+	return string(s.template[span.start:span.end])
 }

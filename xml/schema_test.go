@@ -156,6 +156,20 @@ func TestNew(t *testing.T) {
 				},
 			},
 		},
+		{
+			uri:         "xml007",
+			description: "xml007",
+			newValues: []newValue{
+				{
+					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.AttributeSelector{Name: "attr1", Value: "abc"}},
+					values:    []string{"50", "100"},
+				},
+				{
+					selectors: []xml.Selector{xml.ElementSelector("foo"), xml.AttributeSelector{Name: "attr4", Value: "jkl"}},
+					values:    []string{"125"},
+				},
+			},
+		},
 	}
 
 	//for _, testcase := range testcases[len(testcases)-1:] {

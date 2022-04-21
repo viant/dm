@@ -8,7 +8,7 @@ type Element struct {
 
 //Value returns Element value
 func (e *Element) Value() string {
-	return e.xml.render(e.startElement.elemIndex, e.xml.nextNotChildIndex(e.startElement), true)
+	return e.xml.render(e.startElement.elemIndex, e.xml.nextNotDescendant(e.startElement), true)
 }
 
 //Attribute returns Element attribute with given name

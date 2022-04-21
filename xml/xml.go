@@ -2,47 +2,47 @@ package xml
 
 type (
 	Xml struct {
-		vXml   *Schema
+		schema *Schema
 		buffer *Buffer
 		mutations
 	}
 )
 
 //Xml returns new *Xml
-func (v *Schema) Xml() *Xml {
+func (s *Schema) Xml() *Xml {
 	return &Xml{
-		vXml:      v,
-		buffer:    NewBuffer(v.bufferSize),
-		mutations: newMutations(v.vxml),
+		schema:    s,
+		buffer:    NewBuffer(s.bufferSize),
+		mutations: newMutations(s.vxml),
 	}
 }
 
 //Render returns XML value after changes
 func (x *Xml) Render() string {
-	return x.render(1, len(x.vXml.elements), false)
+	return x.render(1, len(x.schema.elements), false)
 }
 
 func (x *Xml) render(lowerBound, upperBound int, onlyValue bool) string {
 	x.buffer.pos = 0
 
-	prevEnd := x.vXml.elements[lowerBound].start
+	prevEnd := x.schema.elements[lowerBound].start
 	if lowerBound <= 1 && !onlyValue {
 		prevEnd = 0
 	}
 
 	var valueChanged bool
 	for i := lowerBound; i < upperBound; {
-		elem := x.vXml.elements[i]
-		if len(elem.attributes) > 0 {
+		elem := x.schema.elements[i]
+		if len(elem.attributes) > 0 && !onlyValue {
 			x.renderAttributes(prevEnd, elem)
 		} else {
-			x.buffer.appendBytes(x.vXml.template[prevEnd:elem.start])
+			x.buffer.appendBytes(x.schema.template[prevEnd:elem.start])
 		}
 
 		x.renderNewElements(elem)
 		prevEnd, valueChanged = x.renderElemValue(elem, onlyValue)
 		if valueChanged {
-			i = x.nextNotChildIndex(elem)
+			i = x.nextNotDescendant(elem)
 			continue
 		}
 
@@ -50,30 +50,30 @@ func (x *Xml) render(lowerBound, upperBound int, onlyValue bool) string {
 	}
 
 	if !onlyValue {
-		x.buffer.appendBytes(x.vXml.template[prevEnd:])
+		x.buffer.appendBytes(x.schema.template[prevEnd:])
 	}
 
 	return x.buffer.String()
 }
 
 func (x *Xml) renderAttributes(prevEnd int, elem *startElement) {
-	x.buffer.appendBytes(x.vXml.template[prevEnd:elem.attributes[0].valueStart()])
+	x.buffer.appendBytes(x.schema.template[prevEnd:elem.attributes[0].valueStart()])
 	x.renderAttributeValue(elem.attributes[0])
 
 	if len(elem.attributes) > 1 {
-		x.buffer.appendBytes(x.vXml.template[elem.attributes[0].valueEnd():elem.attributes[1].keyStart()])
+		x.buffer.appendBytes(x.schema.template[elem.attributes[0].valueEnd():elem.attributes[1].keyStart()])
 	}
 
 	for i := 1; i < len(elem.attributes); i++ {
 		x.renderAttribute(elem, i)
 	}
 
-	x.buffer.appendByte(x.vXml.template[elem.attributes[len(elem.attributes)-1].valueEnd()])
+	x.buffer.appendByte(x.schema.template[elem.attributes[len(elem.attributes)-1].valueEnd()])
 	x.renderNewAttributes(elem)
-	x.buffer.appendBytes(x.vXml.template[elem.attributes[len(elem.attributes)-1].valueEnd()+1 : elem.start])
+	x.buffer.appendBytes(x.schema.template[elem.attributes[len(elem.attributes)-1].valueEnd()+1 : elem.start])
 }
 
-func (x *Xml) nextNotChildIndex(elem *startElement) int {
+func (x *Xml) nextNotDescendant(elem *startElement) int {
 	if elem.nextSibling != -1 {
 		return elem.nextSibling
 	}
@@ -87,11 +87,11 @@ func (x *Xml) nextNotChildIndex(elem *startElement) int {
 }
 
 func (x *Xml) renderAttribute(elem *startElement, attributeIndex int) {
-	x.buffer.appendBytes(x.vXml.template[elem.attributes[attributeIndex].keyStart():elem.attributes[attributeIndex].valueStart()])
+	x.buffer.appendBytes(x.schema.template[elem.attributes[attributeIndex].keyStart():elem.attributes[attributeIndex].valueStart()])
 	x.renderAttributeValue(elem.attributes[attributeIndex])
 
 	if attributeIndex < len(elem.attributes)-1 {
-		x.buffer.appendBytes(x.vXml.template[elem.attributes[attributeIndex].valueEnd():elem.attributes[attributeIndex+1].keyStart()])
+		x.buffer.appendBytes(x.schema.template[elem.attributes[attributeIndex].valueEnd():elem.attributes[attributeIndex+1].keyStart()])
 	}
 }
 
@@ -101,11 +101,11 @@ func (x *Xml) Select(selectors ...Selector) *Iterator {
 }
 
 func (x *Xml) renderAttributeValue(attribute *attribute) {
-	value, ok := x.mutations.attributeValue(attribute.index)
+	value, ok := x.mutations.checkAttributeChanges(attribute.index)
 	if ok {
 		x.buffer.appendBytes([]byte(value))
 	} else {
-		x.buffer.appendBytes(x.vXml.template[attribute.valueStart():attribute.valueEnd()])
+		x.buffer.appendBytes(x.schema.template[attribute.valueStart():attribute.valueEnd()])
 	}
 }
 
@@ -146,15 +146,15 @@ func (x *Xml) renderElemValue(elem *startElement, onlyValue bool) (int, bool) {
 		elemStart = elem.end
 	}
 
-	end := len(x.vXml.template)
+	end := len(x.schema.template)
 	if onlyValue {
 		end = elem.end
 	} else {
-		if elem.elemIndex < len(x.vXml.elements)-1 {
+		if elem.elemIndex < len(x.schema.elements)-1 {
 			nextElem := elem.elemIndex + 1
-			end = x.vXml.elements[nextElem].start
-			if len(x.vXml.elements[nextElem].attributes) > 0 {
-				end = x.vXml.elements[nextElem].attributes[0].keyStart()
+			end = x.schema.elements[nextElem].start
+			if len(x.schema.elements[nextElem].attributes) > 0 {
+				end = x.schema.elements[nextElem].attributes[0].keyStart()
 			}
 		}
 	}
@@ -163,6 +163,10 @@ func (x *Xml) renderElemValue(elem *startElement, onlyValue bool) (int, bool) {
 		return elemStart, true
 	}
 
-	x.buffer.appendBytes(x.vXml.template[elemStart:end])
+	x.buffer.appendBytes(x.schema.template[elemStart:end])
 	return end, elemStart == elem.end
+}
+
+func (x *Xml) templateSlice(span *span) string {
+	return x.schema.templateSlice(span)
 }

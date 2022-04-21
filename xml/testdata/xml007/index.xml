@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<foo>
+    <prop1 attr1="abc" attr2="def">1</prop1>
+    <prop2 attr3="ghi">2</prop2>
+    <prop3 attr4="jkl" attr5="mno">3</prop3>
+    <prop4 attr1="def" attr2="abc">4</prop4>
+    <prop5 attr1="abc" attr2="def">5</prop5>
+</foo>

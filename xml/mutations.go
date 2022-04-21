@@ -46,7 +46,7 @@ func (m *mutations) updateAttribute(index int, value string) {
 	}
 }
 
-func (m *mutations) attributeValue(index int) (string, bool) {
+func (m *mutations) checkAttributeChanges(index int) (string, bool) {
 	if m.attributesIndex != nil {
 		if len(m.attributes) < mapSize {
 			for _, mutation := range m.attributes {

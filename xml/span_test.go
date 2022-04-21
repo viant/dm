@@ -10,11 +10,11 @@ func TestExtractAttributes(t *testing.T) {
 	testcases := []struct {
 		offset   int
 		template string
-		output   [][2]span
+		output   [][2]*span
 	}{
 		{
 			template: `<elem attr="value">`,
-			output: [][2]span{
+			output: [][2]*span{
 				{
 					{
 						start: 6,
@@ -30,7 +30,7 @@ func TestExtractAttributes(t *testing.T) {
 
 		{
 			template: `<elem attr>`,
-			output: [][2]span{
+			output: [][2]*span{
 				{
 					{
 						start: 6,
@@ -45,7 +45,7 @@ func TestExtractAttributes(t *testing.T) {
 		},
 		{
 			template: `<elem attr="10"    xlns:attr="some attribute">`,
-			output: [][2]span{
+			output: [][2]*span{
 				{
 					{
 						start: 6,
@@ -71,7 +71,7 @@ func TestExtractAttributes(t *testing.T) {
 		{
 			template: `<elem attr="10"    xlns:attr="some attribute">`,
 			offset:   100,
-			output: [][2]span{
+			output: [][2]*span{
 				{
 					{
 						start: 106,

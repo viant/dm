@@ -9,11 +9,11 @@ type Attribute struct {
 
 //Value returns attribute value
 func (a *Attribute) Value() string {
-	value, ok := a.xml.mutations.attributeValue(a.index)
+	change, ok := a.xml.mutations.checkAttributeChanges(a.index)
 	if ok {
-		return value
+		return change
 	} else {
-		return a.element.startElement.Attr[a.index].Value
+		return a.xml.templateSlice(a.element.startElement.attributeValueSpan(a.index))
 	}
 }
 

@@ -9,8 +9,8 @@ type span struct {
 	end   int
 }
 
-func extractAttributes(offset int, input []byte) ([][2]span, error) {
-	result := make([][2]span, 0)
+func extractAttributes(offset int, input []byte) ([][2]*span, error) {
+	result := make([][2]*span, 0)
 
 	var currentOffset int
 	for currentOffset < len(input) && !isWhitespace(input[currentOffset]) {
@@ -18,7 +18,7 @@ func extractAttributes(offset int, input []byte) ([][2]span, error) {
 	}
 
 	if currentOffset == len(input) {
-		return [][2]span{}, nil
+		return [][2]*span{}, nil
 	}
 
 	for currentOffset < len(input) {
@@ -46,8 +46,8 @@ func isWhitespace(b byte) bool {
 	return b == ' ' || b == '\n' || b == '\t' || b == '\r' || b == '\v' || b == '\f'
 }
 
-func matchAttribute(input []byte, offset int) ([2]span, int, error) {
-	result := [2]span{}
+func matchAttribute(input []byte, offset int) ([2]*span, int, error) {
+	result := [2]*span{}
 
 	var i int
 	var b byte
@@ -55,7 +55,7 @@ outer:
 	for i, b = range input {
 		switch b {
 		case '=':
-			result[0] = span{
+			result[0] = &span{
 				start: offset,
 				end:   offset + i,
 			}
@@ -63,7 +63,7 @@ outer:
 			i++
 			break outer
 		case ' ', '\n', '\t', '\r', '\v', '\f', '>':
-			return [2]span{
+			return [2]*span{
 				{
 					start: offset,
 					end:   offset + i - 1,
@@ -85,7 +85,7 @@ outer:
 				foundQuote = i
 			} else {
 				if input[foundQuote] == b {
-					result[1] = span{
+					result[1] = &span{
 						start: offset + foundQuote + 1,
 						end:   offset + i,
 					}
@@ -95,7 +95,7 @@ outer:
 			}
 		case ' ', '\n', '\t', '\r', '\v', '\f':
 			if foundQuote == -1 {
-				result[1] = span{
+				result[1] = &span{
 					start: offset + 1,
 					end:   offset + i - 1,
 				}
@@ -105,5 +105,5 @@ outer:
 		}
 	}
 
-	return [2]span{}, -1, fmt.Errorf("not found attribute value %v", input)
+	return [2]*span{}, -1, fmt.Errorf("not found attribute value %v", input)
 }

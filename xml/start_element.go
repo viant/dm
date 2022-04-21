@@ -4,7 +4,6 @@ import "encoding/xml"
 
 type (
 	startElement struct {
-		*xml.StartElement
 		span
 
 		name        string
@@ -16,15 +15,17 @@ type (
 		schema      *Schema
 		indent      []byte
 
-		elementsIndex map[string][]int
+		elementsIndex          map[string][]int
+		attributeIndex         map[string]int
+		attributeChildrenIndex map[string][]int
 
-		attributeIndex map[string]int
-		attributesName []string
-		attributes     []*attribute
+		attributesName   []string
+		attributes       []*attribute
+		childrenAttrSize int
 	}
 
 	attribute struct {
-		spans [2]span
+		spans [2]*span
 		index int
 	}
 )
@@ -51,10 +52,12 @@ func (s *startElement) append(child *startElement) {
 		s.children[len(s.children)-1].nextSibling = child.elemIndex
 	}
 
+	s.elementsIndex[child.name] = append(s.elementsIndex[child.name], len(s.children))
+	s.indexChildAttributes(child)
+
 	s.children = append(s.children, child)
 	child.parent = s
 
-	s.elementsIndex[child.name] = append(s.elementsIndex[child.name], len(s.children)-1)
 }
 
 func (s *startElement) attrByName(attribute string) (int, bool) {
@@ -73,16 +76,25 @@ func (s *startElement) attrByName(attribute string) (int, bool) {
 }
 
 func newStartElement(element *xml.StartElement, schema *Schema, elemIndex int, startPosition int, attributes []*attribute) *startElement {
+	var elemName string
+	if element != nil {
+		elemName = element.Name.Local
+		if element.Name.Space != "" {
+			elemName = element.Name.Local + ":" + element.Name.Space
+		}
+	}
+
 	elem := &startElement{
-		StartElement: element,
-		elemIndex:    elemIndex,
+		elemIndex: elemIndex,
 		span: span{
 			start: startPosition,
 		},
-		attributes:    attributes,
-		schema:        schema,
-		nextSibling:   -1,
-		elementsIndex: map[string][]int{},
+		name:                   elemName,
+		attributes:             attributes,
+		schema:                 schema,
+		nextSibling:            -1,
+		elementsIndex:          map[string][]int{},
+		attributeChildrenIndex: map[string][]int{},
 	}
 
 	elem.init()
@@ -90,22 +102,17 @@ func newStartElement(element *xml.StartElement, schema *Schema, elemIndex int, s
 }
 
 func (s *startElement) init() {
-	if s.StartElement == nil {
-		return
-	}
-
-	s.initName()
 	s.indexAttributes()
 }
 
 func (s *startElement) indexAttributes() {
-	s.attributesName = make([]string, len(s.Attr))
+	s.attributesName = make([]string, len(s.attributes))
 	for i, attr := range s.attributes {
 		attributeName := string(s.schema.template[attr.keyStart():attr.keyEnd()])
 		s.attributesName[i] = attributeName
 	}
 
-	if len(s.Attr) > mapSize {
+	if len(s.attributes) > mapSize {
 		s.attributeIndex = map[string]int{}
 		for i, attr := range s.attributesName {
 			s.attributeIndex[attr] = i
@@ -113,11 +120,20 @@ func (s *startElement) indexAttributes() {
 	}
 }
 
-func (s *startElement) initName() {
-	s.name = s.Name.Local
+func (s *startElement) attributeValueSpan(attributeIndex int) *span {
+	return s.attributes[attributeIndex].spans[1]
 }
 
-func attributeOf(spans [2]span, counter int) *attribute {
+func (s *startElement) indexChildAttributes(child *startElement) {
+	index := len(s.children)
+	for _, attr := range child.attributes {
+		s.attributeChildrenIndex[s.schema.templateSlice(attr.spans[0])] = append(s.attributeChildrenIndex[s.schema.templateSlice(attr.spans[0])], index)
+	}
+
+	s.childrenAttrSize += len(child.attributes)
+}
+
+func attributeOf(spans [2]*span, counter int) *attribute {
 	return &attribute{
 		spans: spans,
 		index: counter,
