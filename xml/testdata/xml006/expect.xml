@@ -3,4 +3,7 @@
     <id>2</id>
     <name>foo</name>
     <address></address>
+    <quantity>123</quantity>
+    <price>50.5</price>
+    <type>fType</type>
 </foo>

@@ -3,6 +3,7 @@ package xml
 type matcher struct {
 	xml     *Xml
 	indexes []int
+	maxSize []int
 	index   int
 
 	selectors []Selector
@@ -15,7 +16,7 @@ func (m *matcher) updateIndexes() {
 		m.indexes[m.index]++
 	}
 
-	for !(m.indexes[m.index] < len(m.currRoot.children)-1) && m.index != 0 {
+	for !(m.indexes[m.index] < m.maxSize[m.index]) && m.index != 0 {
 		m.indexes[m.index] = 0
 		m.index--
 		m.indexes[m.index] += 1
@@ -44,8 +45,16 @@ func (m *matcher) match() int {
 }
 
 func (m *matcher) matchAny() (*startElement, bool) {
+	if !(len(m.currRoot.children) > mapSize) { //maxSize will be updated in the m.findByMap
+		m.maxSize[m.index] = len(m.currRoot.children)
+	}
+
 	switch actual := m.selectors[m.index].(type) {
 	case ElementSelector:
+		if len(m.currRoot.children) > mapSize {
+			return m.findByMap(string(actual))
+		}
+
 		for ; m.indexes[m.index] < len(m.currRoot.children); m.indexes[m.index]++ {
 			if element := m.currRoot.children[m.indexes[m.index]]; element.Name.Local == string(actual) {
 				return element, true
@@ -54,14 +63,13 @@ func (m *matcher) matchAny() (*startElement, bool) {
 
 	case AttributeSelector:
 		for ; m.indexes[m.index] < len(m.currRoot.children); m.indexes[m.index]++ {
-			startElement := m.currRoot.children[m.indexes[m.index]]
-			attrIndex, ok := startElement.attrByName(actual.Name)
-			if ok && m.checkAttributeValue(startElement, attrIndex, actual.Value) {
-				return startElement, true
+			startElem := m.currRoot.children[m.indexes[m.index]]
+			attrIndex, ok := startElem.attrByName(actual.Name)
+			if ok && m.checkAttributeValue(startElem, attrIndex, actual.Value) {
+				return startElem, true
 			}
 		}
 	}
-
 	return nil, false
 }
 
@@ -74,9 +82,26 @@ func (m *matcher) checkAttributeValue(element *startElement, attr int, attrValue
 	return element.Attr[attr].Value == attrValue
 }
 
+func (m *matcher) findByMap(elementName string) (*startElement, bool) {
+	elementsIndexes, ok := m.currRoot.elementsIndex[elementName]
+	m.maxSize[m.index] = len(elementsIndexes)
+	if !ok || m.sliceIndex() >= len(elementsIndexes) {
+		return nil, false
+	}
+
+	index := m.sliceIndex()
+	element := m.currRoot.children[elementsIndexes[index]]
+	return element, true
+}
+
+func (m *matcher) sliceIndex() int {
+	return m.indexes[m.index]
+}
+
 func newMatcher(xml *Xml, selectors []Selector) *matcher {
 	return &matcher{
 		indexes:   make([]int, len(selectors)),
+		maxSize:   make([]int, len(selectors)),
 		selectors: selectors,
 		currRoot:  xml.vXml.root,
 		xml:       xml,

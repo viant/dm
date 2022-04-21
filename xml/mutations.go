@@ -48,7 +48,7 @@ func (m *mutations) updateAttribute(index int, value string) {
 
 func (m *mutations) attributeValue(index int) (string, bool) {
 	if m.attributesIndex != nil {
-		if len(m.attributes) < 5 {
+		if len(m.attributes) < mapSize {
 			for _, mutation := range m.attributes {
 				if mutation != nil && mutation.index == index {
 					return mutation.newValue, true
@@ -93,7 +93,7 @@ func elementOf(value string) *newElement {
 
 func (m *mutations) elementMutations(index int) (*elementMutation, bool) {
 	if m.elementsIndex != nil {
-		if len(m.elements) < 5 {
+		if len(m.elements) < mapSize {
 			for _, element := range m.elements {
 				if element.index == index {
 					return element, true
@@ -162,7 +162,7 @@ func (m *mutations) setValue(elemIndex int, value string) {
 func newMutations(vxml *Schema) mutations {
 	var attributesIndex map[int]int
 	var attributesMutations []*attributeMutation
-	if vxml.builder.attributeCounter < 30 {
+	if vxml.builder.attributeCounter < prealocateSize {
 		attributesMutations = make([]*attributeMutation, vxml.builder.attributeCounter)
 	} else {
 		attributesIndex = map[int]int{}
@@ -170,7 +170,7 @@ func newMutations(vxml *Schema) mutations {
 
 	var elementsMutations []*elementMutation
 	var elementsMutationsIndex map[int]int
-	if len(vxml.elements) < 30 {
+	if len(vxml.elements) < prealocateSize {
 		elementsMutations = make([]*elementMutation, len(vxml.elements))
 	} else {
 		elementsMutationsIndex = map[int]int{}

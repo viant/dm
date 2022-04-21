@@ -7,13 +7,16 @@ type (
 		*xml.StartElement
 		span
 
+		name        string
 		parent      *startElement
 		children    []*startElement
 		parentIndex int
 		elemIndex   int
 		nextSibling int
-		vxml        *Schema
+		schema      *Schema
 		indent      []byte
+
+		elementsIndex map[string][]int
 
 		attributeIndex map[string]int
 		attributesName []string
@@ -50,6 +53,8 @@ func (s *startElement) append(child *startElement) {
 
 	s.children = append(s.children, child)
 	child.parent = s
+
+	s.elementsIndex[child.name] = append(s.elementsIndex[child.name], len(s.children)-1)
 }
 
 func (s *startElement) attrByName(attribute string) (int, bool) {
@@ -67,16 +72,17 @@ func (s *startElement) attrByName(attribute string) (int, bool) {
 	return -1, false
 }
 
-func newStartElement(element *xml.StartElement, virtualXml *Schema, elemIndex int, startPosition int, attributes []*attribute) *startElement {
+func newStartElement(element *xml.StartElement, schema *Schema, elemIndex int, startPosition int, attributes []*attribute) *startElement {
 	elem := &startElement{
 		StartElement: element,
 		elemIndex:    elemIndex,
 		span: span{
 			start: startPosition,
 		},
-		attributes:  attributes,
-		vxml:        virtualXml,
-		nextSibling: -1,
+		attributes:    attributes,
+		schema:        schema,
+		nextSibling:   -1,
+		elementsIndex: map[string][]int{},
 	}
 
 	elem.init()
@@ -88,19 +94,27 @@ func (s *startElement) init() {
 		return
 	}
 
-	s.attributesName = make([]string, len(s.Attr))
+	s.initName()
+	s.indexAttributes()
+}
 
+func (s *startElement) indexAttributes() {
+	s.attributesName = make([]string, len(s.Attr))
 	for i, attr := range s.attributes {
-		attributeName := string(s.vxml.template[attr.keyStart():attr.keyEnd()])
+		attributeName := string(s.schema.template[attr.keyStart():attr.keyEnd()])
 		s.attributesName[i] = attributeName
 	}
 
-	if len(s.Attr) > 5 {
+	if len(s.Attr) > mapSize {
 		s.attributeIndex = map[string]int{}
 		for i, attr := range s.attributesName {
 			s.attributeIndex[attr] = i
 		}
 	}
+}
+
+func (s *startElement) initName() {
+	s.name = s.Name.Local
 }
 
 func attributeOf(spans [2]span, counter int) *attribute {
