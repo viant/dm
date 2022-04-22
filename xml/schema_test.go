@@ -58,7 +58,8 @@ func TestNew(t *testing.T) {
 		newElements       []newElement
 		newAttributes     []newAttribute
 		newValues         []newValue
-		filters           *xml.Filters
+		filters           *option.Filters
+		xpaths            []string
 	}{
 		{
 			uri:         "xml001",
@@ -178,11 +179,11 @@ func TestNew(t *testing.T) {
 					values:    []string{""},
 				},
 			},
-			filters: xml.NewFilters(
-				xml.NewFilter("foo", "test"),
-				xml.NewFilter("id"),
-				xml.NewFilter("name"),
-				xml.NewFilter("address"),
+			filters: option.NewFilters(
+				option.NewFilter("foo", "test"),
+				option.NewFilter("id"),
+				option.NewFilter("name"),
+				option.NewFilter("address"),
 			),
 		},
 		{
@@ -198,13 +199,11 @@ func TestNew(t *testing.T) {
 					values:    []string{"125"},
 				},
 			},
-			filters: xml.NewFilters(
-				xml.NewFilter("foo"),
-				xml.NewFilter("prop1", "attr1"),
-				xml.NewFilter("prop3", "attr4"),
-				xml.NewFilter("prop4", "attr1"),
-				xml.NewFilter("prop5", "attr1"),
+			filters: option.NewFilters(
+				option.NewFilter("foo"),
+				option.NewFilter("prop4", "attr1"),
 			),
+			xpaths: []string{"foo[test]/prop1[attr1 and attr2]", "prop3[attr4 and attr3]", "prop5[attr1 and attr2]"},
 		},
 		{
 			uri:         "xml007",
@@ -226,6 +225,14 @@ func TestNew(t *testing.T) {
 	for i, testcase := range testcases {
 		fmt.Println("Running testcase: " + strconv.Itoa(i))
 		templatePath := path.Join(testLocation, "testdata", testcase.uri)
+
+		filters, err := xml.NewFilters(testcase.xpaths...)
+		if !assert.Nil(t, err, testcase.description) {
+			t.Fail()
+			continue
+		}
+		testcase.filters.Add(filters...)
+
 		schema, err := readFromFile(path.Join(templatePath, "index.xml"), testcase.filters)
 		if !assert.Nil(t, err, testcase.description) {
 			t.Fail()
@@ -322,7 +329,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func readFromFile(path string, filters *xml.Filters) (*xml.Schema, error) {
+func readFromFile(path string, filters *option.Filters) (*xml.Schema, error) {
 	template, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -342,11 +349,11 @@ var benchSchema *xml.Schema
 
 func init() {
 	bufferSize := option.BufferSize(1024)
-	filters := xml.NewFilters(
-		xml.NewFilter("foo", "test"),
-		xml.NewFilter("id"),
-		xml.NewFilter("name"),
-		xml.NewFilter("address"),
+	filters := option.NewFilters(
+		option.NewFilter("foo", "test"),
+		option.NewFilter("id"),
+		option.NewFilter("name"),
+		option.NewFilter("address"),
 	)
 	benchSchema, _ = xml.New(benchTemplate, bufferSize, filters)
 }

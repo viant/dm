@@ -2,6 +2,7 @@ package xml_test
 
 import (
 	"fmt"
+	"github.com/viant/dm/option"
 	"github.com/viant/dm/xml"
 	"strings"
 )
@@ -25,11 +26,11 @@ func ExampleNew() {
     <type>fType</type>
 </foo>`
 
-	filters := xml.NewFilters(
-		xml.NewFilter("foo", "test"),
-		xml.NewFilter("id"),
-		xml.NewFilter("name"),
-		xml.NewFilter("address"),
+	filters := option.NewFilters(
+		option.NewFilter("foo", "test"),
+		option.NewFilter("id"),
+		option.NewFilter("name"),
+		option.NewFilter("address"),
 	)
 
 	schema, err := xml.New(template, filters)
