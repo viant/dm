@@ -6,6 +6,15 @@ import (
 	"strings"
 )
 
+func FiltersOf(xpath ...string) (*option.Filters, error) {
+	filters, err := NewFilters(xpath...)
+	if err != nil {
+		return nil, err
+	}
+
+	return option.NewFilters(filters...), nil
+}
+
 //NewFilters creates slice option.Filter based on given xpaths
 func NewFilters(xpath ...string) ([]*option.Filter, error) {
 	filters := make([]*option.Filter, 0)

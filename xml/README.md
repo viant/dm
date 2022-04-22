@@ -123,7 +123,14 @@ it is possible to update changes directly in the slice. Default is 30
 You can create filters parsing xpath:
 ```go
 filters := option.NewFilters()
-parsedFilters, err := NewFilters("foo/price[currency]", "address[country and city]/street")
+newFilters, err := xml.NewFilters("foo/price[currency]", "address[country and city]/street")
 // handle error
-filters.Add(parsedFilters...)
+filters.Add(newFilters...)
+```
+
+Or
+```go
+filters := option.NewFilters()
+filters, err := xml.FiltersOf("foo/price[currency]", "address[country and city]/street")
+// handle error
 ```
