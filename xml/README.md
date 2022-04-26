@@ -1,43 +1,42 @@
 ##Introduction
-The subpackage `xml` of `dm` works very similar to the `dm` but for templates in the xml format. 
+The package `xml` of `dm` works very similar to the  `html` package but for templates in the xml format. 
 
 ## Usage
-Similarly to the `dm` in order to manipulate xml, first you need to create `Schema`, schema can be shared across the app:
+Similarly to the `html` in order to manipulate xml, first you need to create `VirtualDOM`, one can be shared across the app:
 
 ```go
 template := []byte("<?xml version=...")
-schema, err := xml.New(template)
+vdom, err := xml.New(template)
 // handle error
 ```
 
 ```go
 bufferSize := xml.BufferSize(1024)
-filter := xml.NewFilters(
-	xml.NewTagFilter("foo", "attr1", "attr2"), 
-	xml.NewTagFilter("name", "attr1", "attr2"),
+filter := option.NewFilters(
+	option.NewFilter("foo", "attr1", "attr2"), 
+	option.NewFilter("name", "attr1", "attr2"),
 	)
-schema, err := xml.New(template, bufferSize, filter)
+vdom, err := xml.New(template, bufferSize, filter)
 // handle error
 ```
 
-Then you need to create a `Xml`:
+Then you need to create a `DOM`:
 ```go
-xml := schema.Xml()
-templateWithBuffer := dom.Template()
+dom := vdom.DOM()
 ```
 
 Now you can get/set Attribute, get/set Value by using selectors. 
-Possible selectors:
 ```go
-elementSelector := xml.ElementSelector("foo")
-attributeSelector := xml.AttributeSelector{
-	Name: "attr1",
-	Value: "value1",
+elementSelector := xml.Selector{
+	Name: "foo",
+	Attributes: []AttributeSelector{
+		Name: "id", 
+		Value: "1",
+	}
 }
 ```
 
 Usage:
-
 ```go
 	template := `
 <?xml version="1.0" encoding="UTF-8"?>
@@ -57,60 +56,58 @@ Usage:
     <type>fType</type>
 </foo>`
 
-    filters := xml.NewFilters(
-        xml.NewFilter("foo", "test"),
-        xml.NewFilter("id"),
-        xml.NewFilter("name"),
-        xml.NewFilter("address"),
-    )
+filters := option.NewFilters(
+    option.NewFilter("foo", "test"),
+    option.NewFilter("id"),
+    option.NewFilter("name"),
+    option.NewFilter("address"),
+)
 
-    schema, err := xml.New(template, filters)
-    if err != nil {
-        fmt.Println(err)
-        return
+vdom, err := xml.New(template, filters)
+if err != nil {
+    fmt.Println(err)
+    return
+}
+
+dom := vdom.DOM()
+
+elemIt := dom.Select(xml.Selector{Name: "foo"}, xml.Selector{Name: "id"})
+for elemIt.Has() {
+    elem, _ := elemIt.Next()
+    elem.SetValue("10")
+}
+
+elemIt = dom.Select(xml.Selector{Name: "foo"}, xml.Selector{Name: "address"})
+for elemIt.Has() {
+    elem, _ := elemIt.Next()
+    elem.SetValue("")
+    elem.AddElement("<new-elem>New element value</new-elem>")
+}
+
+elemIt = dom.Select(xml.Selector{Name: "foo", Attributes: []xml.AttributeSelector{{Name: "test", Value: "true"}}})
+for elemIt.Has() {
+    elem, _ := elemIt.Next()
+    elem.AddAttribute("attr1", "value1")
+    attribute, ok := elem.Attribute("test")
+    if !ok {
+        continue
     }
+    attribute.Set(strings.ToUpper(attribute.Value()))
+}
 
-    aXml := schema.Xml()
+result := dom.Render()
+fmt.Println(result)
 
-    elemIt := aXml.Select(xml.ElementSelector("foo"), xml.ElementSelector("id"))
-    for elemIt.Has() {
-        elem, _ := elemIt.Next()
-        elem.SetValue("10")
-    }
-
-    elemIt = aXml.Select(xml.ElementSelector("foo"), xml.ElementSelector("address"))
-    for elemIt.Has() {
-        elem, _ := elemIt.Next()
-        elem.SetValue("")
-        elem.AddElement("<new-elem>New element value</new-elem>")
-    }
-
-    elemIt = aXml.Select(xml.AttributeSelector{Name: "test", Value: "true"})
-    for elemIt.Has() {
-        elem, _ := elemIt.Next()
-        elem.AddAttribute("attr1", "value1")
-        attribute, ok := elem.Attribute("test")
-        if !ok {
-            continue
-        }
-        attribute.Set(strings.ToUpper(attribute.Value()))
-    }
-
-    result := aXml.Render()
-    fmt.Println(result)
-
-    // Output:
-    // <?xml version="1.0" encoding="UTF-8"?>
-    // <foo test="TRUE" attr1="value1">
-    //     <id>10</id>
-    //     <name>foo name</name>
-    //     <address>
-    //         <new-elem>New element value</new-elem>
-    //     </address>
-    //     <quantity>123</quantity>
-    //     <price>50.5</price>
-    //     <type>fType</type>
-    // </foo>
+// Output:
+// <?xml version="1.0" encoding="UTF-8"?>
+// <foo test="TRUE" attr1="value1">
+//     <id>10</id>
+//     <name>foo name</name>
+//     <address><new-elem>New element value</new-elem></address>
+//     <quantity>123</quantity>
+//     <price>50.5</price>
+//     <type>fType</type>
+// </foo>
 ```
 
 ## Options
@@ -130,7 +127,6 @@ filters.Add(newFilters...)
 
 Or
 ```go
-filters := option.NewFilters()
 filters, err := xml.FiltersOf("foo/price[currency]", "address[country and city]/street")
 // handle error
 ```

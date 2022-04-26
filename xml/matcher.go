@@ -1,12 +1,12 @@
 package xml
 
 type matcher struct {
-	xml     *Xml
+	xml     *DOM
 	indexes []int
 	maxSize []int
 	index   int
 
-	selectors []ElementSelector
+	selectors []Selector
 	currRoot  *startElement
 }
 
@@ -103,12 +103,12 @@ func (m *matcher) sliceIndex() int {
 	return m.indexes[m.index]
 }
 
-func newMatcher(xml *Xml, selectors []ElementSelector) *matcher {
+func newMatcher(xml *DOM, selectors []Selector) *matcher {
 	return &matcher{
 		indexes:   make([]int, len(selectors)),
 		maxSize:   make([]int, len(selectors)),
 		selectors: selectors,
-		currRoot:  xml.schema.root,
+		currRoot:  xml.vdom.root,
 		xml:       xml,
 	}
 }

@@ -6,8 +6,8 @@ import (
 	"github.com/viant/dm/option"
 )
 
-//Schema represents Xml schema
-type Schema struct {
+//VirtualDOM represents VirtualDOM structure
+type VirtualDOM struct {
 	template []byte
 	*builder
 	bufferSize int
@@ -16,11 +16,11 @@ type Schema struct {
 	elementsChangesSize   int
 }
 
-//New creates new Schema
-func New(xml string, options ...option.Option) (*Schema, error) {
-	vxml := &Schema{
-		template:              []byte(xml),
-		bufferSize:            len(xml),
+//New creates new VirtualDOM
+func New(template string, options ...option.Option) (*VirtualDOM, error) {
+	vxml := &VirtualDOM{
+		template:              []byte(template),
+		bufferSize:            len(template),
 		attributesChangesSize: prealocateSize,
 		elementsChangesSize:   prealocateSize,
 	}
@@ -35,7 +35,7 @@ func New(xml string, options ...option.Option) (*Schema, error) {
 	return vxml, nil
 }
 
-func (s *Schema) init() error {
+func (s *VirtualDOM) init() error {
 	decoder := xml.NewDecoder(bytes.NewReader(s.template))
 	var prevOffset int
 	for {
@@ -55,7 +55,7 @@ func (s *Schema) init() error {
 				return err
 			}
 		case xml.EndElement:
-			s.builder.closeElement()
+			s.builder.closeElement(int(decoder.InputOffset()))
 		case xml.CharData:
 			s.builder.addCharData(int(decoder.InputOffset()), actual)
 		}
@@ -64,7 +64,7 @@ func (s *Schema) init() error {
 	}
 }
 
-func (s *Schema) apply(options []option.Option) {
+func (s *VirtualDOM) apply(options []option.Option) {
 	for _, opt := range options {
 		switch actual := opt.(type) {
 		case option.BufferSize:
@@ -79,6 +79,6 @@ func (s *Schema) apply(options []option.Option) {
 	}
 }
 
-func (s *Schema) templateSlice(span *span) string {
+func (s *VirtualDOM) templateSlice(span *span) string {
 	return string(s.template[span.start:span.end])
 }

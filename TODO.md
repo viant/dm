@@ -6,3 +6,5 @@ but if DOM changes a lot, copying template may be expensive. In that case it wou
 render template lazily allocating slice for the attributes new value (slice[i] == nil means that value was not updated)
 
 ### Xml:
+* Add xpath validaiton
+* create selectors of xpath

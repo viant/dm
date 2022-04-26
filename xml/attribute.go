@@ -2,7 +2,7 @@ package xml
 
 //Attribute represents XML element attribute
 type Attribute struct {
-	xml     *Xml
+	xml     *DOM
 	element *Element
 	index   int
 }

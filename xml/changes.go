@@ -15,11 +15,12 @@ type (
 	}
 
 	elementChanges struct {
-		index         int
-		value         string
-		newElements   []*newElement
-		newAttributes []*newAttribute
-		valueChanged  bool
+		index          int
+		value          string
+		newElements    []*newElement
+		newAttributes  []*newAttribute
+		valueChanged   bool
+		elementsBefore []string
 	}
 
 	newElement struct {
@@ -82,7 +83,7 @@ func (m *changes) addElement(index int, value string) {
 	}
 
 	elemMutation := &elementChanges{newElements: []*newElement{elementOf(value)}, index: index}
-	m.addElementMutation(elemMutation)
+	m.addElementChanges(elemMutation)
 }
 
 func elementOf(value string) *newElement {
@@ -130,10 +131,10 @@ func (m *changes) addAttribute(elemIndex int, key string, value string) {
 		newAttributes: []*newAttribute{newAttr},
 	}
 
-	m.addElementMutation(elemMutation)
+	m.addElementChanges(elemMutation)
 }
 
-func (m *changes) addElementMutation(mutation *elementChanges) {
+func (m *changes) addElementChanges(mutation *elementChanges) {
 	if m.elementsIndex == nil {
 		m.elements[mutation.index] = mutation
 	} else {
@@ -156,10 +157,11 @@ func (m *changes) setValue(elemIndex int, value string) {
 		value:        value,
 		valueChanged: true,
 	}
-	m.addElementMutation(mutation)
+
+	m.addElementChanges(mutation)
 }
 
-func newMutations(schema *Schema) changes {
+func newMutations(schema *VirtualDOM) changes {
 	var attributesIndex map[int]int
 	var attributesMutations []*attributeChanges
 	if schema.builder.attributeCounter < schema.attributesChangesSize {

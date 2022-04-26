@@ -33,28 +33,28 @@ func ExampleNew() {
 		option.NewFilter("address"),
 	)
 
-	schema, err := xml.New(template, filters)
+	vdom, err := xml.New(template, filters)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	aXml := schema.Xml()
+	dom := vdom.DOM()
 
-	elemIt := aXml.Select(xml.ElementSelector{Name: "foo"}, xml.ElementSelector{Name: "id"})
+	elemIt := dom.Select(xml.Selector{Name: "foo"}, xml.Selector{Name: "id"})
 	for elemIt.Has() {
 		elem, _ := elemIt.Next()
 		elem.SetValue("10")
 	}
 
-	elemIt = aXml.Select(xml.ElementSelector{Name: "foo"}, xml.ElementSelector{Name: "address"})
+	elemIt = dom.Select(xml.Selector{Name: "foo"}, xml.Selector{Name: "address"})
 	for elemIt.Has() {
 		elem, _ := elemIt.Next()
 		elem.SetValue("")
 		elem.AddElement("<new-elem>New element value</new-elem>")
 	}
 
-	elemIt = aXml.Select(xml.ElementSelector{Name: "foo", Attributes: []xml.AttributeSelector{{Name: "test", Value: "true"}}})
+	elemIt = dom.Select(xml.Selector{Name: "foo", Attributes: []xml.AttributeSelector{{Name: "test", Value: "true"}}})
 	for elemIt.Has() {
 		elem, _ := elemIt.Next()
 		elem.AddAttribute("attr1", "value1")
@@ -65,7 +65,7 @@ func ExampleNew() {
 		attribute.Set(strings.ToUpper(attribute.Value()))
 	}
 
-	result := aXml.Render()
+	result := dom.Render()
 	fmt.Println(result)
 
 	// Output:
@@ -73,9 +73,7 @@ func ExampleNew() {
 	// <foo test="TRUE" attr1="value1">
 	//     <id>10</id>
 	//     <name>foo name</name>
-	//     <address>
-	//         <new-elem>New element value</new-elem>
-	//     </address>
+	//     <address><new-elem>New element value</new-elem></address>
 	//     <quantity>123</quantity>
 	//     <price>50.5</price>
 	//     <type>fType</type>

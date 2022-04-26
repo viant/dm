@@ -4,7 +4,7 @@ import "encoding/xml"
 
 type (
 	startElement struct {
-		span
+		value span
 
 		name        string
 		parent      *startElement
@@ -12,7 +12,7 @@ type (
 		parentIndex int
 		elemIndex   int
 		nextSibling int
-		schema      *Schema
+		schema      *VirtualDOM
 		indent      []byte
 
 		elementsIndex  map[string][]int
@@ -21,6 +21,7 @@ type (
 		attributesName   []string
 		attributes       []*attribute
 		childrenAttrSize int
+		tag              span
 	}
 
 	attribute struct {
@@ -56,6 +57,8 @@ func (s *startElement) append(child *startElement) {
 	s.children = append(s.children, child)
 	child.parent = s
 
+	child.indent = s.children[0].indent
+	s.value.end = child.tag.end
 }
 
 func (s *startElement) attrByName(attribute string) (int, bool) {
@@ -73,7 +76,7 @@ func (s *startElement) attrByName(attribute string) (int, bool) {
 	return -1, false
 }
 
-func newStartElement(element *xml.StartElement, schema *Schema, elemIndex int, startPosition int, attributes []*attribute) *startElement {
+func newStartElement(element *xml.StartElement, schema *VirtualDOM, elemIndex int, valueStart int, attributes []*attribute, tagStart int) *startElement {
 	var elemName string
 	if element != nil {
 		elemName = element.Name.Local
@@ -84,8 +87,11 @@ func newStartElement(element *xml.StartElement, schema *Schema, elemIndex int, s
 
 	elem := &startElement{
 		elemIndex: elemIndex,
-		span: span{
-			start: startPosition,
+		value: span{
+			start: valueStart,
+		},
+		tag: span{
+			start: tagStart,
 		},
 		name:          elemName,
 		attributes:    attributes,

@@ -4,7 +4,7 @@ import "fmt"
 
 //Iterator iterates over matching Elements
 type Iterator struct {
-	xml     *Xml
+	dom     *DOM
 	current int
 	next    int
 	matcher *matcher
@@ -38,13 +38,13 @@ func (i *Iterator) Next() (*Element, error) {
 	i.current = i.next
 	return &Element{
 		startElement: i.matcher.currRoot,
-		xml:          i.xml,
+		dom:          i.dom,
 	}, nil
 }
 
-func newIterator(xml *Xml, selectors []ElementSelector) *Iterator {
+func newIterator(xml *DOM, selectors []Selector) *Iterator {
 	return &Iterator{
-		xml:     xml,
+		dom:     xml,
 		current: -1,
 		next:    -1,
 		matcher: newMatcher(xml, selectors),

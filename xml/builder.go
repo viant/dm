@@ -6,7 +6,7 @@ import (
 )
 
 type builder struct {
-	schema       *Schema
+	schema       *VirtualDOM
 	root         *startElement
 	elements     []*startElement
 	indexesStack []int
@@ -50,7 +50,7 @@ func (b *builder) addElement(actual xml.StartElement, valueStart int, raw []byte
 	}
 
 	attributes = attributes[:counter]
-	element := newStartElement(&actual, b.schema, len(b.elements), valueStart, attributes)
+	element := newStartElement(&actual, b.schema, len(b.elements), valueStart, attributes, offset)
 	b.addStartElement(element)
 	return nil
 }
@@ -70,12 +70,13 @@ func (b *builder) appendElementIfNeeded(element *startElement) {
 	parent.append(element)
 }
 
-func (b *builder) closeElement() {
+func (b *builder) closeElement(offset int) {
 	if b.skipped > 0 {
 		b.skipped--
 		return
 	}
 
+	b.elements[b.indexesStack[len(b.indexesStack)-1]].tag.end = offset
 	b.indexesStack = b.indexesStack[:len(b.indexesStack)-1]
 }
 
@@ -87,15 +88,15 @@ func (b *builder) addCharData(offset int, actual xml.CharData) {
 		element.indent = actual.Copy()
 	}
 
-	element.end = offset
+	element.value.end = offset
 
 	if element.parent != nil {
-		element.parent.end = offset
+		element.parent.value.end = offset
 	}
 }
 
-func newBuilder(vxml *Schema) *builder {
-	element := newStartElement(nil, vxml, 0, 0, []*attribute{})
+func newBuilder(vxml *VirtualDOM) *builder {
+	element := newStartElement(nil, vxml, 0, 0, []*attribute{}, 0)
 	b := &builder{
 		root:   element,
 		schema: vxml,
