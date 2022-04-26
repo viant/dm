@@ -186,9 +186,8 @@ func TestDOM_Element_NewAttribute(t *testing.T) {
 		_ = aTag.SetInnerHTML("New inner html")
 	}
 
-	tagIt = dom.Select("p", "class", "p-small")
-	for tagIt.Has() {
-		aTag, _ := tagIt.Next()
+	aTag, ok := dom.SelectFirst("p", "class", "p-small")
+	if ok {
 		aTag.AddAttribute("id", "second-paragraph")
 	}
 

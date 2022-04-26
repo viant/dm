@@ -54,6 +54,21 @@ func (d *DOM) Select(selectors ...string) *ElementIterator {
 	}
 }
 
+func (d *DOM) SelectFirst(selectors ...string) (*Element, bool) {
+	next, _ := d.nextMatchingTag(0, selectors)
+	if next == -1 {
+		return nil, false
+	}
+
+	return &Element{
+		template:        d,
+		tag:             d.tag(next),
+		attributeOffset: d.tag(next - 1).attrEnd,
+		attrs:           d.tagAttributes(next),
+		index:           next,
+	}, true
+}
+
 //SelectAttributes returns AttributeIterator to iterate over HTML Attributes
 func (d *DOM) SelectAttributes(selectors ...string) *AttributeIterator {
 	return &AttributeIterator{
