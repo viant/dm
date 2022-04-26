@@ -41,20 +41,18 @@ func ExampleNew() {
 
 	dom := vdom.DOM()
 
-	elemIt := dom.Select(xml.Selector{Name: "foo"}, xml.Selector{Name: "id"})
-	for elemIt.Has() {
-		elem, _ := elemIt.Next()
+	elem, ok := dom.SelectFirst(xml.Selector{Name: "foo"}, xml.Selector{Name: "id"})
+	if ok {
 		elem.SetValue("10")
 	}
 
-	elemIt = dom.Select(xml.Selector{Name: "foo"}, xml.Selector{Name: "address"})
-	for elemIt.Has() {
-		elem, _ := elemIt.Next()
+	elem, ok = dom.SelectFirst(xml.Selector{Name: "foo"}, xml.Selector{Name: "address"})
+	if ok {
 		elem.SetValue("")
 		elem.AddElement("<new-elem>New element value</new-elem>")
 	}
 
-	elemIt = dom.Select(xml.Selector{Name: "foo", Attributes: []xml.AttributeSelector{{Name: "test", Value: "true"}}})
+	elemIt := dom.Select(xml.Selector{Name: "foo", Attributes: []xml.AttributeSelector{{Name: "test", Value: "true"}}})
 	for elemIt.Has() {
 		elem, _ := elemIt.Next()
 		elem.AddAttribute("attr1", "value1")

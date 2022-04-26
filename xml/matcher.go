@@ -114,12 +114,12 @@ func (m *matcher) compare(currentValue string, attrSelector *AttributeSelector) 
 	}
 }
 
-func newMatcher(xml *DOM, selectors []Selector) *matcher {
+func newMatcher(dom *DOM, selectors []Selector) *matcher {
 	return &matcher{
 		indexes:   make([]int, len(selectors)),
 		maxSize:   make([]int, len(selectors)),
 		selectors: selectors,
-		currRoot:  xml.vdom.root,
-		xml:       xml,
+		currRoot:  dom.vdom.root,
+		xml:       dom,
 	}
 }

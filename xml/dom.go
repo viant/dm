@@ -79,6 +79,20 @@ func (d *DOM) Select(selectors ...Selector) *Iterator {
 	return newIterator(d, selectors)
 }
 
+//SelectFirst returns first Element that matches selectors
+func (d *DOM) SelectFirst(selectors ...Selector) (*Element, bool) {
+	selMatcher := newMatcher(d, selectors)
+	matched := selMatcher.match()
+	if matched == -1 {
+		return nil, false
+	}
+
+	return &Element{
+		dom:          d,
+		startElement: selMatcher.currRoot,
+	}, true
+}
+
 func (d *DOM) renderAttributeValue(attribute *attribute) {
 	value, ok := d.changes.checkAttributeChanges(attribute.index)
 	if ok {
