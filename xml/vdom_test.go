@@ -249,6 +249,7 @@ func TestNew(t *testing.T) {
 			t.Fail()
 			continue
 		}
+
 		testcase.filters.Add(filters...)
 
 		vdom, err := readFromFile(path.Join(templatePath, "index.xml"), testcase.filters)
@@ -385,6 +386,7 @@ var benchTemplate string
 var benchVDOM *xml.VirtualDOM
 
 func init() {
+	return
 	bufferSize := option.BufferSize(1024)
 	filters := option.NewFilters(
 		option.NewFilter("foo", "test"),

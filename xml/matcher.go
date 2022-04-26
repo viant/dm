@@ -70,7 +70,7 @@ func (m *matcher) matches(elem *startElement) bool {
 
 	for _, attributeSelector := range m.selectors[m.index].Attributes {
 		byName, ok := elem.attrByName(attributeSelector.Name)
-		if !ok || !m.checkAttributeValue(elem, byName, attributeSelector.Value) {
+		if !ok || !m.checkAttributeValue(elem, byName, &attributeSelector) {
 			return false
 		}
 	}
@@ -78,13 +78,13 @@ func (m *matcher) matches(elem *startElement) bool {
 	return true
 }
 
-func (m *matcher) checkAttributeValue(element *startElement, attr int, attrValue string) bool {
+func (m *matcher) checkAttributeValue(element *startElement, attr int, attrSelector *AttributeSelector) bool {
 	value, ok := m.xml.checkAttributeChanges(attr)
 	if ok {
-		return value == attrValue
+		return m.compare(value, attrSelector)
 	}
 
-	return m.xml.templateSlice(element.attributeValueSpan(attr)) == attrValue
+	return m.compare(m.xml.templateSlice(element.attributeValueSpan(attr)), attrSelector)
 }
 
 func (m *matcher) findElement() (*startElement, bool) {
@@ -101,6 +101,17 @@ func (m *matcher) findElement() (*startElement, bool) {
 
 func (m *matcher) sliceIndex() int {
 	return m.indexes[m.index]
+}
+
+func (m *matcher) compare(currentValue string, attrSelector *AttributeSelector) bool {
+	switch attrSelector.Compare {
+	case EQ:
+		return currentValue == attrSelector.Value
+	case NEQ:
+		return currentValue != attrSelector.Value
+	default:
+		return currentValue == attrSelector.Value
+	}
 }
 
 func newMatcher(xml *DOM, selectors []Selector) *matcher {

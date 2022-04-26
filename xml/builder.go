@@ -25,7 +25,7 @@ func (b *builder) addElement(actual xml.StartElement, valueStart int, raw []byte
 	var attributeFilter *option.Filter
 	if b.filters != nil {
 		var ok bool
-		attributeFilter, ok = b.filters.ElementFilter(name(&actual))
+		attributeFilter, ok = b.filters.ElementFilter(elementFullName(&actual))
 		if !ok {
 			b.skipped++
 			return nil
@@ -44,7 +44,7 @@ func (b *builder) addElement(actual xml.StartElement, valueStart int, raw []byte
 			continue
 		}
 
-		attributes[i] = attributeOf(attributesSpan[i], b.attributeCounter)
+		attributes[counter] = attributeOf(attributesSpan[i], b.attributeCounter)
 		b.attributeCounter++
 		counter++
 	}
@@ -110,7 +110,7 @@ func (b *builder) allElements() []*startElement {
 	return b.elements[1:]
 }
 
-func name(element *xml.StartElement) string {
+func elementFullName(element *xml.StartElement) string {
 	result := element.Name.Local
 	if element.Name.Space != "" {
 		result = element.Name.Space + ":" + result

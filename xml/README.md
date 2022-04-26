@@ -117,7 +117,7 @@ it is possible to update changes directly in the slice. Default is 30
 * `AttributesChangesSize` - same as above, but for the attributes. Default is 30
 
 ## Filters
-You can create filters parsing xpath:
+You can create filters by parsing xpath, value of attribute is optional:
 ```go
 filters := option.NewFilters()
 newFilters, err := xml.NewFilters("foo/price[currency]", "address[country and city]/street")
@@ -130,3 +130,14 @@ Or
 filters, err := xml.FiltersOf("foo/price[currency]", "address[country and city]/street")
 // handle error
 ```
+
+### Selectors
+You can create selectors by parsing xpath, value of attribute is required:
+```go
+selectors, err := xml.NewSelectors("foo[test='true' and lang!='eng']/address") option.NewFilters()
+// handle error
+```
+
+Supported:
+* Attributes selectors can be combined with `and`
+* Equal (`=`) / Not Equal (`!=`)
