@@ -28,19 +28,16 @@ func (v *VirtualDOM) apply(options []option.Option) {
 	}
 }
 
-//AttributesLen returns number of attributes. Attributes[0] is an empty attribute.
-func (v *VirtualDOM) AttributesLen() int {
-	return len(v.builder.attributes)
-}
-
 //New parses template and creates new VirtualDOM. Filters can be specified to index some tags and attributes.
 func New(template string, options ...option.Option) (*VirtualDOM, error) {
-	domBuilder := newBuilder()
 	templateBytes := []byte(template)
 	d := &VirtualDOM{
 		template: templateBytes,
-		builder:  domBuilder,
 	}
+
+	domBuilder := newBuilder(d)
+	d.builder = domBuilder
+
 	d.apply(options)
 
 	if err := d.buildTemplate(templateBytes); err != nil {
@@ -79,11 +76,10 @@ outer:
 
 			v.builder.newTag(string(tagName), rawSpan(node).end, nodeSpan, html.SelfClosingTagToken == next)
 			if v.filter == nil {
-				buildAllAttributes(template, node, v.builder)
+				buildAllAttributes(node, v.builder)
 			} else {
 				buildFilteredAttributes(template, tagName, node, v.builder, v.filter)
 			}
-			v.builder.attributesBuilt()
 		case html.EndTagToken:
 			tagName, _ := node.TagName()
 			if v.filter != nil {
@@ -97,10 +93,10 @@ outer:
 	return nil
 }
 
-func buildAllAttributes(template []byte, z *html.Tokenizer, builder *builder) {
+func buildAllAttributes(z *html.Tokenizer, builder *builder) {
 	attributes := attributesSpan(z)
 	for _, attribute := range attributes {
-		builder.attribute(template, attribute)
+		builder.attribute(attribute)
 	}
 }
 
@@ -114,6 +110,6 @@ func buildFilteredAttributes(template []byte, tagName []byte, z *html.Tokenizer,
 		if ok := attributeFilter.Matches(string(template[attribute[0].start:attribute[0].end])); !ok {
 			continue
 		}
-		builder.attribute(template, attribute)
+		builder.attribute(attribute)
 	}
 }

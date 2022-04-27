@@ -8,26 +8,26 @@ import (
 type (
 	//DOM modifies the VirtualDOM
 	DOM struct {
-		dom    *VirtualDOM
+		vdom   *VirtualDOM
 		buffer *Buffer
 		mutations
 	}
 
 	mutations struct {
-		attributesStart []int
-		innerHTMLSize   []int
-		tagsRemoved     []bool
+		attrValueEnd  []int
+		innerHTMLSize []int
+		tagsRemoved   []bool
 	}
 )
 
 //DOM creates new DOM
 func (v *VirtualDOM) DOM(options ...option.Option) *DOM {
 	session := &DOM{
-		dom: v,
+		vdom: v,
 		mutations: mutations{
-			attributesStart: make([]int, len(v.attributes)),
-			innerHTMLSize:   make([]int, len(v.tags)),
-			tagsRemoved:     make([]bool, len(v.tags)),
+			attrValueEnd:  make([]int, v.attributeCounter),
+			innerHTMLSize: make([]int, len(v.tags)),
+			tagsRemoved:   make([]bool, len(v.tags)),
 		},
 	}
 
@@ -50,136 +50,56 @@ func (d *DOM) Select(selectors ...string) *ElementIterator {
 			next:      -1,
 			selectors: selectors,
 		},
-		index: -1,
+		matcher: newElementMatcher(d, selectors),
+		index:   -1,
 	}
 }
 
 func (d *DOM) SelectFirst(selectors ...string) (*Element, bool) {
-	next, _ := d.nextMatchingTag(0, selectors)
+	next := newElementMatcher(d, selectors).match()
 	if next == -1 {
 		return nil, false
 	}
 
 	return &Element{
-		template:        d,
-		tag:             d.tag(next),
-		attributeOffset: d.tag(next - 1).attrEnd,
-		attrs:           d.tagAttributes(next),
-		index:           next,
+		template: d,
+		tag:      d.tag(next),
 	}, true
 }
 
 //SelectAttributes returns AttributeIterator to iterate over HTML Attributes
 func (d *DOM) SelectAttributes(selectors ...string) *AttributeIterator {
 	return &AttributeIterator{
-		iterator: iterator{
-			template:  d,
-			current:   -1,
-			next:      -1,
-			selectors: selectors,
-		},
-		index: -1,
+		dom:     d,
+		matcher: newAttributeMatcher(d, selectors),
 	}
 }
 
-func (d *DOM) attribute(i int) *attr {
-	return d.dom.attributes[i]
-}
+func (d *DOM) setAttribute(anAttr *attr, newValue []byte) {
+	start := d.attrValueEnd[anAttr.index]
+	currOffset := d.buffer.replaceBytes(anAttr.boundaries[1], start, d.offsetDiff(anAttr.index), newValue)
 
-func (d *DOM) setAttributeByIndex(i int, value []byte) {
-	d.updateAttributeValue(i, value)
-}
+	if currOffset == 0 {
+		return
+	}
 
-func (d *DOM) updateAttributeValue(i int, newValue []byte) {
-	currOffset := d.buffer.replaceBytes(d.attribute(i).boundaries[1], d.attributesStart[i], d.offsetDiff(i), newValue)
-	d.attributesStart[i] += currOffset
-	d.updateAttributesStart(i, currOffset)
-}
-
-func (d *DOM) updateAttributesStart(i int, currOffset int) {
-	for j := i + 1; j < len(d.dom.attributes); j++ {
-		d.attributesStart[j] += currOffset
+	for i := anAttr.index; i < len(d.attrValueEnd); i++ {
+		d.attrValueEnd[i] += currOffset
 	}
 }
 
-func (d *DOM) nextAttribute(offset int, selectors ...string) (newOffset int, index int) {
-	if len(selectors) <= 1 {
-		newOffset, index = d.matchAttributeByTag(offset, selectors)
-	} else {
-		newOffset, index = d.matchAttributeByAttributeName(offset, selectors)
-	}
-
-	return newOffset, index
+func (d *DOM) innerHTML(aTag *tag) []byte {
+	start := d.tagValueOffset(aTag)
+	slice := d.buffer.slice(aTag.innerHTML, start, start+d.innerHTMLSize[aTag.index])
+	return slice
 }
 
-func (d *DOM) matchAttributeByTag(offset int, selectors []string) (int, int) {
-	if offset == 0 {
-		offset = 1
-	}
-	for i := offset; i < len(d.dom.attributes); i++ {
-		if !d.matchTag(d.attribute(i).tag, selectors) {
-			continue
-		}
-		return i, i
-	}
-	return -1, -1
-}
-
-func (d *DOM) attributeByIndex(i int) []byte {
-	return d.attributeValue(i)
-}
-
-//innerHTMLByIndex returns innerHTML of n-th tag
-func (d *DOM) innerHTMLByIndex(tagIndex int) []byte {
-	return d.buffer.slice(d.tag(tagIndex).innerHTML, d.tagOffset(tagIndex), d.tagOffset(tagIndex))
-}
-
-func (d *DOM) nextMatchingTag(offset int, selectors []string) (int, int) {
-	if len(selectors) == 0 {
-		i := d.findFirstTag(offset)
-		return i, i
-
+func (d *DOM) tagValueOffset(aTag *tag) int {
+	if aTag.attrEnd >= 0 {
+		return d.attrValueEnd[aTag.attrEnd]
 	}
 
-	groupIndex := d.dom.index.tagIndex(selectors[0], false)
-	if groupIndex == -1 || len(d.dom.tagsGrouped[groupIndex]) <= offset {
-		return -1, -1
-	}
-
-	tagIndex := d.dom.tagsGrouped[groupIndex][offset]
-	for i := tagIndex; i < len(d.dom.tags); i++ {
-		if d.tagsRemoved[i] {
-			continue
-		}
-
-		if len(selectors) == 1 {
-			return i, offset + i - tagIndex
-		}
-
-		for j := d.tag(i - 1).attrEnd; j < d.tag(i).attrEnd; j++ {
-			if !d.matchAttributeName(j, selectors) {
-				continue
-			}
-
-			if !d.matchAttributeValue(j, selectors) {
-				continue
-			}
-
-			return i, offset + i - tagIndex
-		}
-	}
-	return -1, -1
-}
-
-func (d *DOM) findFirstTag(offset int) int {
-	for i := offset + 1; i < len(d.dom.tags); i++ {
-		if d.tagsRemoved[i] {
-			continue
-		}
-
-		return i
-	}
-	return -1
+	return 0
 }
 
 func (d *DOM) matchTag(i int, selectors []string) bool {
@@ -199,78 +119,76 @@ func (d *DOM) Render() string {
 }
 
 func (d *DOM) tag(i int) *tag {
-	return d.dom.tags[i]
+	return d.vdom.tags[i]
 }
 
 func (d *DOM) offsetDiff(i int) int {
-	return d.attributesStart[i] - d.attributesStart[i-1]
-}
+	if i == 0 {
+		return 0
+	}
 
-func (d *DOM) attrByIndex(i int) *attr {
-	return d.dom.attributes[i]
+	return d.attrValueEnd[i] - d.attrValueEnd[i-1]
 }
 
 func (d *DOM) attrOffset(i int) int {
-	return d.attributesStart[i]
+	return d.attrValueEnd[i]
 }
 
 func (d *DOM) tagOffset(i int) int {
-	return d.dom.tags.tagOffset(i, d.attributesStart)
+	return d.vdom.tags.tagOffset(i, d.attrValueEnd)
 }
 
-func (d *DOM) setInnerHTMLByIndex(tagIndex int, value []byte) error {
-	if err := d.updateInnerHTML(tagIndex, value); err != nil {
+func (d *DOM) setInnerHTML(aTag *tag, value []byte) error {
+	if err := d.updateInnerHTML(aTag, value); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (d *DOM) updateInnerHTML(tagIndex int, newInnerHTML []byte) error {
-	diff := d.buffer.replaceBytes(d.tag(tagIndex).innerHTML, d.tagOffset(tagIndex), d.innerHTMLSize[tagIndex], newInnerHTML)
-	for i := d.tag(tagIndex).attrEnd; i < len(d.attributesStart); i++ {
-		d.attributesStart[i] += diff
+func (d *DOM) updateInnerHTML(aTag *tag, newInnerHTML []byte) error {
+	diff := d.buffer.replaceBytes(aTag.innerHTML, d.tagValueOffset(aTag), d.innerHTMLSize[aTag.index], newInnerHTML)
+	for i := aTag.attrEnd + 1; i < len(d.attrValueEnd); i++ {
+		d.attrValueEnd[i] += diff
 	}
 
-	for i := tagIndex + 1; i < len(d.tagsRemoved); i++ {
-		if d.tag(tagIndex).depth <= d.tag(i).depth {
+	for i := aTag.index + 1; i < len(d.tagsRemoved); i++ {
+		if aTag.depth <= d.tag(i).depth {
 			break
 		}
 		d.tagsRemoved[i] = true
 	}
 
-	d.innerHTMLSize[tagIndex] += diff
+	d.innerHTMLSize[aTag.index] += diff
 	return nil
 }
 
-func (d *DOM) matchAttributeName(i int, selectors []string) bool {
-	if len(selectors) <= 1 {
-		return true
-	}
-
-	return bytes.EqualFold(
-		d.buffer.slice(d.dom.attributes[i].boundaries[0], d.attributesStart[i-1], d.attributesStart[i-1]),
-		asBytes(selectors[1]),
-	)
-}
-
-func (d *DOM) matchAttributeValue(i int, selectors []string) bool {
+func (d *DOM) matchAttributeValue(anAttr *attr, selectors []string) bool {
 	if len(selectors) < 3 {
 		return true
 	}
 
-	slice := d.buffer.slice(d.attrByIndex(i).boundaries[1], d.attributesStart[i], d.attributesStart[i])
+	slice := d.buffer.slice(anAttr.boundaries[1], d.attrValueOffset(anAttr), d.attrValueEnd[anAttr.index])
 	return bytes.Equal(
 		slice,
 		asBytes(selectors[2]),
 	)
 }
 
-func (d *DOM) attributeKey(index int) []byte {
-	return d.buffer.slice(d.attribute(index).boundaries[0], d.attrOffset(index-1), d.attrOffset(index-1))
+func (d *DOM) attrValueOffset(anAttr *attr) int {
+	if anAttr.index > 0 {
+		return d.attrValueEnd[anAttr.index-1]
+	}
+
+	return 0
 }
 
-func (d *DOM) attributeValue(i int) []byte {
-	return d.buffer.buffer[d.attribute(i).valueStart()+d.attributesStart[i-1] : d.attribute(i).valueEnd()+d.attributesStart[i]]
+func (d *DOM) attributeKey(anAttr *attr) []byte {
+	return d.buffer.slice(anAttr.boundaries[0], d.attrOffset(anAttr.index-1), d.attrOffset(anAttr.index-1))
+}
+
+func (d *DOM) attributeValue(anAttr *attr) []byte {
+	start := d.attrValueOffset(anAttr)
+	return d.buffer.buffer[anAttr.valueStart()+start : anAttr.valueEnd()+d.attrValueEnd[anAttr.index]]
 }
 
 func (d *DOM) apply(options []option.Option) {
@@ -283,35 +201,10 @@ func (d *DOM) apply(options []option.Option) {
 }
 
 func (d *DOM) tagLen() int {
-	return len(d.dom.tags)
+	return len(d.vdom.tags)
 }
 
-func (d *DOM) tagAttributes(i int) attrs {
-	return d.dom.attributes[d.tag(i-1).attrEnd:d.tag(i).attrEnd]
-}
-
-func (d *DOM) matchAttributeByAttributeName(offset int, selectors []string) (int, int) {
-	groupIndex := d.dom.attributeIndex(selectors[1], false)
-	if groupIndex == -1 {
-		return -1, -1
-	}
-
-	for i := offset; i < len(d.dom.attributesGrouped[groupIndex]); i++ {
-		attrIndex := d.dom.attributesGrouped[groupIndex][i]
-		if !d.matchTag(d.attribute(attrIndex).tag, selectors) {
-			continue
-		}
-
-		if len(selectors) < 2 && !d.matchAttributeValue(attrIndex, selectors) {
-			continue
-		}
-		return i, attrIndex
-	}
-
-	return -1, -1
-}
-
-func (d *DOM) addAttribute(tagIndex int, key string, value string) {
+func (d *DOM) addAttribute(aTag *tag, key string, value string) {
 	// adding to the buffer: ` key="value"`
 	newAttribute := make([]byte, len(key)+len(value)+4)
 	newAttribute[0] = ' '
@@ -321,10 +214,24 @@ func (d *DOM) addAttribute(tagIndex int, key string, value string) {
 	offset += copy(newAttribute[offset:], value)
 	offset += copy(newAttribute[offset:], `"`)
 
-	end := d.tag(tagIndex).attrEnd - 1
-	d.buffer.insertAfter(d.attribute(end).valueEnd()+1, d.attrOffset(end), newAttribute)
-
-	for i := end; i < len(d.dom.attributes); i++ {
-		d.attributesStart[i] += offset
+	var end int
+	if len(aTag.attrs) > 0 {
+		end = aTag.attrs[len(aTag.attrs)-1].valueEnd()
+	} else {
+		end = aTag.tagName.end
 	}
+
+	start := d.tagValueOffset(aTag)
+	d.buffer.insertAfter(end+1, start, newAttribute)
+	for i := zeroIfNegative(aTag.attrEnd); i < len(d.attrValueEnd); i++ {
+		d.attrValueEnd[i] += offset
+	}
+}
+
+func zeroIfNegative(value int) int {
+	if value < 0 {
+		return 0
+	}
+
+	return value
 }

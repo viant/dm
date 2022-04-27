@@ -4,7 +4,8 @@ type (
 	attrs []*attr
 	attr  struct {
 		boundaries [2]*span
-		tag        int
+		tag        *tag
+		index      int
 	}
 )
 

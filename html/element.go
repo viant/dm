@@ -7,50 +7,43 @@ type (
 	Element struct {
 		template *DOM
 		tag      *tag
-		attrs    attrs
-
-		index           int
-		attributeOffset int
 	}
 
 	//Attribute represents HTML Element attribute
 	Attribute struct {
 		template *DOM
-		index    int
-
-		parent  int
-		_parent *Element
+		attr     *attr
+		_parent  *Element
 	}
 )
 
 //InnerHTML returns InnerHTML of Element
 func (e *Element) InnerHTML() string {
-	return string(e.template.innerHTMLByIndex(e.tag.index)) //not converting unsafe.Pointers to not make mutable string, if you change source slice, string will also change
+	return string(e.template.innerHTML(e.tag))
 }
 
 //SetInnerHTML updates InnerHTML of Element
 func (e *Element) SetInnerHTML(innerHTML string) error {
-	return e.template.setInnerHTMLByIndex(e.index, asBytes(innerHTML))
+	return e.template.setInnerHTML(e.tag, asBytes(innerHTML))
 }
 
 //AttributesLen returns number of Element Attributes
 func (e *Element) AttributesLen() int {
-	return len(e.attrs)
+	return len(e.tag.attrs)
 }
 
 //AttributeByIndex returns n-th Attribute
 func (e *Element) AttributeByIndex(i int) *Attribute {
 	return &Attribute{
 		template: e.template,
-		index:    e.attributeOffset + i,
-		parent:   e.index,
+		attr:     e.tag.attrs[i],
 		_parent:  e,
 	}
 }
 
 func (e *Element) HasAttribute(name string) bool {
-	for i := range e.attrs {
-		if bytes.EqualFold(e.template.attributeKey(e.attributeOffset+i), asBytes(name)) {
+	for i := range e.tag.attrs {
+		if bytes.EqualFold(e.template.attributeKey(e.tag.attrs[i]), asBytes(name)) {
 			return true
 		}
 	}
@@ -59,8 +52,8 @@ func (e *Element) HasAttribute(name string) bool {
 
 //Attribute returns matched attribute, true or nil, false
 func (e *Element) Attribute(name string) (*Attribute, bool) {
-	for i := range e.attrs {
-		if bytes.EqualFold(e.template.attributeKey(e.attributeOffset+i), asBytes(name)) {
+	for i := range e.tag.attrs {
+		if bytes.EqualFold(e.template.attributeKey(e.tag.attrs[i]), asBytes(name)) {
 			return e.AttributeByIndex(i), true
 		}
 	}
@@ -69,8 +62,8 @@ func (e *Element) Attribute(name string) (*Attribute, bool) {
 
 //MatchAttribute returns an attribute that matches the supplied attribute name and value
 func (e *Element) MatchAttribute(name, value string) (*Attribute, bool) {
-	for i := range e.attrs {
-		if bytes.EqualFold(e.template.attributeKey(e.attributeOffset+i), asBytes(name)) && bytes.EqualFold(e.template.attributeValue(e.attributeOffset+i), asBytes(value)) {
+	for i := range e.tag.attrs {
+		if bytes.EqualFold(e.template.attributeKey(e.tag.attrs[i]), asBytes(name)) && bytes.EqualFold(e.template.attributeValue(e.tag.attrs[i]), asBytes(value)) {
 			return e.AttributeByIndex(i), true
 		}
 	}
@@ -78,22 +71,22 @@ func (e *Element) MatchAttribute(name, value string) (*Attribute, bool) {
 }
 
 func (e *Element) AddAttribute(key, value string) {
-	e.template.addAttribute(e.index, key, value)
+	e.template.addAttribute(e.tag, key, value)
 }
 
 //Name returns Attribute Key
 func (a *Attribute) Name() string {
-	return string(a.template.attributeKey(a.index)) //not converting unsafe.Pointers to not make mutable string, if you change source slice, string will also change
+	return string(a.template.vdom.template[a.attr.keyStart():a.attr.keyEnd()])
 }
 
 //Value returns Attribute Value
 func (a *Attribute) Value() string {
-	return string(a.template.attributeValue(a.index)) //not converting unsafe.Pointers to not make mutable string, if you change source slice, string will also change
+	return string(a.template.attributeValue(a.attr))
 }
 
 //Set updates Attribute value
 func (a *Attribute) Set(newValue string) {
-	a.template.setAttributeByIndex(a.index, asBytes(newValue))
+	a.template.setAttribute(a.attr, asBytes(newValue))
 }
 
 //Parent returns Attribute parent Element
@@ -103,12 +96,10 @@ func (a *Attribute) Parent() *Element {
 	}
 
 	element := &Element{
-		template:        a.template,
-		tag:             a.template.tag(a.parent),
-		attrs:           a.template.tagAttributes(a.parent),
-		index:           a.parent,
-		attributeOffset: a.template.tag(a.parent - 1).attrEnd,
+		template: a.template,
+		tag:      a.attr.tag,
 	}
+
 	a._parent = element
 	return element
 }

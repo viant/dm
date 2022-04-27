@@ -13,13 +13,16 @@ type (
 	//ElementIterator iterates over matching tags
 	ElementIterator struct {
 		iterator
-		index int
+		matcher *elementMatcher
+		index   int
 	}
 
 	//AttributeIterator iterates over matching attributes
 	AttributeIterator struct {
-		iterator
-		index int
+		nextAttr    *attr
+		currentAttr *attr
+		matcher     *attributeMatcher
+		dom         *DOM
 	}
 )
 
@@ -33,7 +36,7 @@ func (it *ElementIterator) Has() bool {
 		return false
 	}
 
-	it.next, it.index = it.template.nextMatchingTag(it.index+1, it.selectors)
+	it.next = it.matcher.match()
 
 	return it.next != -1
 }
@@ -51,46 +54,39 @@ func (it *ElementIterator) Next() (*Element, error) {
 
 	it.current = it.next
 	return &Element{
-		template:        it.template,
-		tag:             it.template.tag(it.current),
-		attributeOffset: it.template.tag(it.current - 1).attrEnd,
-		attrs:           it.template.tagAttributes(it.current),
-		index:           it.current,
+		template: it.template,
+		tag:      it.template.tag(it.current),
 	}, nil
 }
 
 //Has returns true if there are more attributes matching given selectors
 func (at *AttributeIterator) Has() bool {
-	if at.current < at.next {
-		return true
-	}
-
-	if at.next == -1 && at.current != -1 {
+	if at.nextAttr == nil && at.currentAttr != nil {
 		return false
 	}
 
-	at.next, at.index = at.template.nextAttribute(at.current+1, at.selectors...)
+	if at.nextAttr != nil && at.currentAttr == nil {
+		return true
+	}
 
-	return at.next != -1
+	at.nextAttr = at.matcher.match()
+	at.currentAttr = nil
+
+	return at.nextAttr != nil
 }
 
 //Next returns Attribute matching given selectors
 //Note: it is needed to call Has before calling Next
 func (at *AttributeIterator) Next() (*Attribute, error) {
-	if at.current == at.next {
+	if at.nextAttr == nil {
 		return nil, fmt.Errorf("it is needed to call Has, before Next is called")
 	}
 
-	if at.next == -1 {
-		return nil, fmt.Errorf("next was called but there are no elements left")
-	}
-
 	result := &Attribute{
-		template: at.template,
-		index:    at.index,
-		parent:   at.template.attribute(at.index).tag,
+		template: at.dom,
+		attr:     at.nextAttr,
 	}
 
-	at.current = at.next
+	at.currentAttr = at.nextAttr
 	return result, nil
 }

@@ -42,14 +42,12 @@ const (
 )
 
 type index struct {
-	attributes map[string]int
-	tags       map[string]int
+	tags map[string]int
 }
 
 func newIndex() *index {
 	return &index{
-		attributes: map[string]int{},
-		tags:       map[string]int{},
+		tags: map[string]int{},
 	}
 }
 
@@ -138,17 +136,18 @@ func (i *index) attributeIndex(attribute string, createIfAbsent bool) int {
 	case `height`:
 		return heightAttribute
 	default:
-		attributeIndex, ok := i.attributes[attribute]
-		if ok {
-			return attributeIndex
-		}
-
-		if !createIfAbsent {
-			return -1
-		}
-
-		attributeIndex = len(i.tags) + lastAttribute
-		i.attributes[attribute] = attributeIndex
-		return attributeIndex
+		//attributeIndex, ok := i.attributes[attribute]
+		//if ok {
+		//	return attributeIndex
+		//}
+		//
+		//if !createIfAbsent {
+		//	return -1
+		//}
+		//
+		//attributeIndex = len(i.tags) + lastAttribute
+		//i.attributes[attribute] = attributeIndex
+		//return attributeIndex
 	}
+	return 0
 }

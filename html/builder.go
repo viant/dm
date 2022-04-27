@@ -4,28 +4,25 @@ import "strings"
 
 type (
 	builder struct {
-		attributes        attrs
-		tags              tags
-		indexesStack      []int
-		tagCounter        int
-		depth             int
-		tagsGrouped       [][]int
-		attributesGrouped [][]int
+		vdom         *VirtualDOM
+		tags         tags
+		indexesStack []int
+		tagCounter   int
+		depth        int
+		tagsGrouped  [][]int
 		*index
+
+		attributeCounter int
 	}
 )
 
-func newBuilder() *builder {
+func newBuilder(vdom *VirtualDOM) *builder {
 	builder := &builder{
-		tagsGrouped:       make([][]int, lastTag),
-		attributesGrouped: make([][]int, lastAttribute),
-		index:             newIndex(),
+		tagsGrouped: make([][]int, lastTag),
+		index:       newIndex(),
+		vdom:        vdom,
 	}
 
-	builder.attributes = append(builder.attributes, &attr{
-		boundaries: [2]*span{{}, {}}, //tag 0 is a sentinel
-		tag:        0,
-	})
 	builder.tags = append(builder.tags, &tag{
 		depth:     -1,
 		innerHTML: &span{},
@@ -36,33 +33,16 @@ func newBuilder() *builder {
 	return builder
 }
 
-func (b *builder) attribute(template []byte, spans [2]span) {
-	attributeName := string(template[spans[0].start:spans[0].end])
-	attributeGroup := b.index.attributeIndex(attributeName, true)
-	if attributeGroup < len(b.attributesGrouped) {
-		b.attributesGrouped[attributeGroup] = append(b.attributesGrouped[attributeGroup], len(b.attributes))
-	} else {
-		b.attributesGrouped = append(b.attributesGrouped, []int{len(b.attributes)})
-	}
-
-	b.attributes = append(b.attributes, &attr{
-		tag: b.tagCounter,
-		boundaries: [2]*span{
-			{
-				start: spans[0].start,
-				end:   spans[0].end,
-			},
-			{
-				start: spans[1].start,
-				end:   spans[1].end,
-			},
-		},
-	})
+func (b *builder) attribute(spans [2]span) {
+	b.tags[len(b.tags)-1].addAttribute(spans, b.attributeCounter)
+	b.attributeCounter++
 }
 
 func (b *builder) newTag(tagName string, start int, tagSpan span, selfClosing bool) {
 	aTag := &tag{
-		depth: b.depth,
+		vdom:      b.vdom,
+		attrIndex: map[string]int{},
+		depth:     b.depth,
 		innerHTML: &span{
 			start: start,
 		},
@@ -70,7 +50,8 @@ func (b *builder) newTag(tagName string, start int, tagSpan span, selfClosing bo
 			start: tagSpan.start,
 			end:   tagSpan.end,
 		},
-		index: b.tagCounter + 1,
+		index:   b.tagCounter + 1,
+		attrEnd: b.attributeCounter - 1,
 	}
 
 	if strings.EqualFold(tagName, "script") {
@@ -104,10 +85,6 @@ func (b *builder) closeTag(end int) {
 	}
 
 	b.indexesStack = b.indexesStack[:len(b.indexesStack)-1]
-}
-
-func (b *builder) attributesBuilt() {
-	b.tags[b.lastTag()].attrEnd = len(b.attributes)
 }
 
 func (b *builder) lastTag() int {

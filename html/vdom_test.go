@@ -129,7 +129,7 @@ func TestDOM(t *testing.T) {
 			tagIt := session.Select(selectors...)
 			for tagIt.Has() {
 				element, _ := tagIt.Next()
-				assertly.AssertValues(t, search.value, element.InnerHTML())
+				assertly.AssertValues(t, search.value, element.InnerHTML(), testcase.description)
 			}
 		}
 
