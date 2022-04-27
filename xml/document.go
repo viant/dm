@@ -89,7 +89,7 @@ func (d *Document) SelectFirst(selectors ...Selector) (*Element, bool) {
 
 	return &Element{
 		document:     d,
-		startElement: selMatcher.currRoot,
+		startElement: selMatcher.next,
 	}, true
 }
 

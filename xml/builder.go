@@ -13,7 +13,9 @@ type builder struct {
 
 	attributeCounter int
 	filters          *option.Filters
-	skipped          int
+
+	groups  map[string][]int
+	skipped int
 }
 
 func (b *builder) addElement(actual xml.StartElement, valueStart int, raw []byte, offset int) error {
@@ -56,6 +58,8 @@ func (b *builder) addElement(actual xml.StartElement, valueStart int, raw []byte
 }
 
 func (b *builder) addStartElement(element *startElement) {
+	b.groups[element.name] = append(b.groups[element.name], len(b.elements))
+
 	b.appendElementIfNeeded(element)
 	b.indexesStack = append(b.indexesStack, len(b.elements))
 	b.elements = append(b.elements, element)
@@ -98,8 +102,9 @@ func (b *builder) addCharData(offset int, actual xml.CharData) {
 func newBuilder(dom *DOM) *builder {
 	element := newStartElement(nil, dom, 0, 0, []*attribute{}, 0)
 	b := &builder{
-		root: element,
-		dom:  dom,
+		root:   element,
+		dom:    dom,
+		groups: map[string][]int{},
 	}
 
 	b.addStartElement(element)

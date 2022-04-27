@@ -37,7 +37,7 @@ func (i *Iterator) Next() (*Element, error) {
 
 	i.current = i.next
 	return &Element{
-		startElement: i.matcher.currRoot,
+		startElement: i.matcher.next,
 		document:     i.document,
 	}, nil
 }

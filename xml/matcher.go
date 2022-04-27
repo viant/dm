@@ -7,52 +7,70 @@ type matcher struct {
 	index    int
 
 	selectors []Selector
-	currRoot  *startElement
+	currRoots []*startElement
+
+	next *startElement
 }
 
 func (m *matcher) updateIndexes() {
 	if m.index == len(m.selectors) {
+		if m.index == 0 {
+			return
+		}
+
 		m.index--
 		m.indexes[m.index]++
-		m.currRoot = m.currRoot.parent
+		m.currRoots[0] = m.currRoots[0].parent
 	}
 
 	for !(m.indexes[m.index] < m.maxSize[m.index]) && m.index != 0 {
 		m.indexes[m.index] = 0
 		m.index--
 		m.indexes[m.index] += 1
-		m.currRoot = m.currRoot.parent
+		m.currRoots[0] = m.currRoots[0].parent
 	}
 }
 
 func (m *matcher) match() int {
+	if len(m.currRoots) == 0 {
+		return -1
+	}
+
 	m.updateIndexes()
 
 	for m.index < len(m.selectors) {
-		if elem, ok := m.matchAny(); ok {
+		if elem, ok := m.checkIfMatches(); ok {
 			m.index++
-			m.currRoot = elem
+			m.currRoots[0] = elem
 			continue
 		}
 
 		if m.index == 0 {
-			return -1
+			if len(m.currRoots) <= 1 {
+				return -1
+			} else {
+				m.currRoots = m.currRoots[1:]
+				continue
+			}
 		}
 
 		m.updateIndexes()
 	}
 
-	return m.currRoot.elemIndex
+	m.next = m.currRoots[0]
+	m.currRoots = m.currRoots[1:]
+
+	return m.next.elemIndex
 }
 
-func (m *matcher) matchAny() (*startElement, bool) {
-	if len(m.currRoot.children) > mapSize {
+func (m *matcher) checkIfMatches() (*startElement, bool) {
+	if len(m.currRoots[0].children) > mapSize {
 		return m.findElement()
 	}
 
-	m.maxSize[m.index] = len(m.currRoot.children)
-	for ; m.indexes[m.index] < len(m.currRoot.children); m.indexes[m.index]++ {
-		element := m.currRoot.children[m.indexes[m.index]]
+	m.maxSize[m.index] = len(m.currRoots[0].children)
+	for ; m.indexes[m.index] < len(m.currRoots[0].children); m.indexes[m.index]++ {
+		element := m.currRoots[0].children[m.indexes[m.index]]
 		if !m.matches(element) {
 			continue
 		}
@@ -88,14 +106,14 @@ func (m *matcher) checkAttributeValue(element *startElement, attr int, attrSelec
 }
 
 func (m *matcher) findElement() (*startElement, bool) {
-	elementsIndexes, ok := m.currRoot.elementsIndex[m.selectors[m.index].Name]
+	elementsIndexes, ok := m.currRoots[0].elementsIndex[m.selectors[m.index].Name]
 	m.maxSize[m.index] = len(elementsIndexes)
 	if !ok || m.sliceIndex() >= len(elementsIndexes) {
 		return nil, false
 	}
 
 	index := m.sliceIndex()
-	element := m.currRoot.children[elementsIndexes[index]]
+	element := m.currRoots[0].children[elementsIndexes[index]]
 	return element, true
 }
 
@@ -114,12 +132,24 @@ func (m *matcher) compare(currentValue string, attrSelector *AttributeSelector) 
 	}
 }
 
-func newMatcher(dom *Document, selectors []Selector) *matcher {
+func newMatcher(document *Document, selectors []Selector) *matcher {
+	roots := []*startElement{document.dom.root}
+	if len(selectors) > 0 && selectors[0].MatchAny {
+		ints := document.dom.groups[selectors[0].Name]
+		roots = make([]*startElement, len(ints))
+
+		for i, elemIndex := range ints {
+			roots[i] = document.dom.elements[elemIndex]
+		}
+
+		selectors = selectors[1:]
+	}
+
 	return &matcher{
 		indexes:   make([]int, len(selectors)),
 		maxSize:   make([]int, len(selectors)),
 		selectors: selectors,
-		currRoot:  dom.dom.root,
-		document:  dom,
+		currRoots: roots,
+		document:  document,
 	}
 }

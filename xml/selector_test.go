@@ -16,7 +16,11 @@ func TestXpathSelectors(t *testing.T) {
 	}{
 		{
 			xpath:  `foo[test='true']/address`,
-			output: `[{"Name":"foo","Attributes":[{"Name":"test","Value":"true","Compare":"="}]},{"Name":"address"}]`,
+			output: `[{"Name":"foo","Attributes":[{"Name":"test","Value":"true","Compare":"="}],"MatchAny":true},{"Name":"address", "MatchAny":false}]`,
+		},
+		{
+			xpath:  `/foo[test='true']/address`,
+			output: `[{"Name":"foo","Attributes":[{"Name":"test","Value":"true","Compare":"="}],"MatchAny":false},{"Name":"address","MatchAny":false}]`,
 		},
 	}
 

@@ -266,6 +266,20 @@ func TestNew(t *testing.T) {
 				},
 			},
 		},
+		{
+			uri:         "xml011",
+			description: "any selector",
+			newValues: []newValue{
+				{
+					selectors: []xml.Selector{{Name: "zip-code", MatchAny: true}},
+					values:    []string{"22000"},
+				},
+				{
+					selectors: []xml.Selector{{Name: "street", MatchAny: true}},
+					values:    []string{"ABC"},
+				},
+			},
+		},
 	}
 	//for i, testcase := range testcases[len(testcases)-1:] {
 	for i, testcase := range testcases {
