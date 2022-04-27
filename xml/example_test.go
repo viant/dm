@@ -39,7 +39,7 @@ func ExampleNew() {
 		return
 	}
 
-	dom := vdom.DOM()
+	dom := vdom.Document()
 
 	elem, ok := dom.SelectFirst(xml.Selector{Name: "foo"}, xml.Selector{Name: "id"})
 	if ok {

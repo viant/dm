@@ -6,8 +6,8 @@ import (
 	"github.com/viant/dm/option"
 )
 
-//VirtualDOM represents VirtualDOM structure
-type VirtualDOM struct {
+//DOM represents VirtualDOM structure
+type DOM struct {
 	template []byte
 	*builder
 	bufferSize int
@@ -17,26 +17,26 @@ type VirtualDOM struct {
 }
 
 //New creates new VirtualDOM
-func New(template string, options ...option.Option) (*VirtualDOM, error) {
-	vxml := &VirtualDOM{
+func New(template string, options ...option.Option) (*DOM, error) {
+	dom := &DOM{
 		template:              []byte(template),
 		bufferSize:            len(template),
 		attributesChangesSize: prealocateSize,
 		elementsChangesSize:   prealocateSize,
 	}
 
-	vxml.builder = newBuilder(vxml)
-	vxml.apply(options)
+	dom.builder = newBuilder(dom)
+	dom.apply(options)
 
-	if err := vxml.init(); err != nil {
+	if err := dom.init(); err != nil {
 		return nil, err
 	}
 
-	return vxml, nil
+	return dom, nil
 }
 
-func (s *VirtualDOM) init() error {
-	decoder := xml.NewDecoder(bytes.NewReader(s.template))
+func (d *DOM) init() error {
+	decoder := xml.NewDecoder(bytes.NewReader(d.template))
 	var prevOffset int
 	for {
 		token, err := decoder.Token()
@@ -50,35 +50,35 @@ func (s *VirtualDOM) init() error {
 
 		switch actual := token.(type) {
 		case xml.StartElement:
-			err := s.builder.addElement(actual, int(decoder.InputOffset()), s.template[prevOffset:decoder.InputOffset()], prevOffset)
+			err := d.builder.addElement(actual, int(decoder.InputOffset()), d.template[prevOffset:decoder.InputOffset()], prevOffset)
 			if err != nil {
 				return err
 			}
 		case xml.EndElement:
-			s.builder.closeElement(int(decoder.InputOffset()))
+			d.builder.closeElement(int(decoder.InputOffset()))
 		case xml.CharData:
-			s.builder.addCharData(int(decoder.InputOffset()), actual)
+			d.builder.addCharData(int(decoder.InputOffset()), actual)
 		}
 
 		prevOffset = int(decoder.InputOffset())
 	}
 }
 
-func (s *VirtualDOM) apply(options []option.Option) {
+func (d *DOM) apply(options []option.Option) {
 	for _, opt := range options {
 		switch actual := opt.(type) {
 		case option.BufferSize:
-			s.bufferSize = int(actual)
+			d.bufferSize = int(actual)
 		case *option.Filters:
-			s.builder.filters = actual
+			d.builder.filters = actual
 		case AttributesChangesSize:
-			s.attributesChangesSize = int(actual)
+			d.attributesChangesSize = int(actual)
 		case ElementsChangesSize:
-			s.elementsChangesSize = int(actual)
+			d.elementsChangesSize = int(actual)
 		}
 	}
 }
 
-func (s *VirtualDOM) templateSlice(span *span) string {
-	return string(s.template[span.start:span.end])
+func (d *DOM) templateSlice(span *span) string {
+	return string(d.template[span.start:span.end])
 }

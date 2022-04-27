@@ -5,7 +5,7 @@ import "strings"
 type (
 	tags []*tag
 	tag  struct {
-		vdom *VirtualDOM
+		vdom *DOM
 
 		innerHTML *span
 		tagName   *span

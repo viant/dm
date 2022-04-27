@@ -4,7 +4,7 @@ import "strings"
 
 type (
 	builder struct {
-		vdom         *VirtualDOM
+		vdom         *DOM
 		tags         tags
 		indexesStack []int
 		tagCounter   int
@@ -16,7 +16,7 @@ type (
 	}
 )
 
-func newBuilder(vdom *VirtualDOM) *builder {
+func newBuilder(vdom *DOM) *builder {
 	builder := &builder{
 		tagsGrouped: make([][]int, lastTag),
 		index:       newIndex(),

@@ -40,7 +40,7 @@ func TestNew(t *testing.T) {
 		before    bool
 	}
 
-	type newAttribute struct {
+	type attributeChanges struct {
 		selectors []xml.Selector
 		keys      []string
 		values    []string
@@ -59,8 +59,10 @@ func TestNew(t *testing.T) {
 		attributesChanges []attributeChange
 		addedElements     []newElement
 		insertedElements  []newElement
-		newAttributes     []newAttribute
+		newAttributes     []attributeChanges
+		setAttributes     []attributeChanges
 		newValues         []newValue
+		replaced          []newValue
 		filters           *option.Filters
 		xpaths            []string
 	}{
@@ -128,7 +130,7 @@ func TestNew(t *testing.T) {
 		{
 			uri:         "xml005",
 			description: "add new attribute",
-			newAttributes: []newAttribute{
+			newAttributes: []attributeChanges{
 				{
 					selectors: []xml.Selector{{
 						Name:       "foo",
@@ -238,6 +240,32 @@ func TestNew(t *testing.T) {
 				},
 			},
 		},
+		{
+			uri:         "xml009",
+			description: "element -> SetAttribute",
+			setAttributes: []attributeChanges{
+				{
+					selectors: []xml.Selector{{Name: "foo"}},
+					keys:      []string{"test"},
+					values:    []string{"true"},
+				},
+				{
+					selectors: []xml.Selector{{Name: "foo"}},
+					keys:      []string{"newAttr"},
+					values:    []string{"125"},
+				},
+			},
+		},
+		{
+			uri:         "xml010",
+			description: "element -> ReplaceWith",
+			replaced: []newValue{
+				{
+					selectors: []xml.Selector{{Name: "foo"}, {Name: "address"}},
+					values:    []string{"<type>fType</type>"},
+				},
+			},
+		},
 	}
 	//for i, testcase := range testcases[len(testcases)-1:] {
 	for i, testcase := range testcases {
@@ -252,16 +280,16 @@ func TestNew(t *testing.T) {
 
 		testcase.filters.Add(filters...)
 
-		vdom, err := readFromFile(path.Join(templatePath, "index.xml"), testcase.filters)
+		dom, err := readFromFile(path.Join(templatePath, "index.xml"), testcase.filters)
 		if !assert.Nil(t, err, testcase.description) {
 			t.Fail()
 			continue
 		}
 
-		dom := vdom.DOM()
+		document := dom.Document()
 
 		for _, search := range testcase.valuesSearch {
-			it := dom.Select(search.selectors...)
+			it := document.Select(search.selectors...)
 			counter := 0
 			for it.Has() {
 				element, _ := it.Next()
@@ -273,7 +301,7 @@ func TestNew(t *testing.T) {
 		}
 
 		for _, search := range testcase.attributesSearch {
-			it := dom.Select(search.selectors...)
+			it := document.Select(search.selectors...)
 			counter := 0
 			for it.Has() {
 				element, _ := it.Next()
@@ -287,7 +315,7 @@ func TestNew(t *testing.T) {
 		}
 
 		for _, attributesMutation := range testcase.attributesChanges {
-			it := dom.Select(attributesMutation.selectors...)
+			it := document.Select(attributesMutation.selectors...)
 			counter := 0
 			for it.Has() {
 				element, _ := it.Next()
@@ -302,7 +330,7 @@ func TestNew(t *testing.T) {
 		}
 
 		for _, newElem := range testcase.addedElements {
-			it := dom.Select(newElem.selectors...)
+			it := document.Select(newElem.selectors...)
 			counter := 0
 			for it.Has() {
 				element, _ := it.Next()
@@ -314,7 +342,7 @@ func TestNew(t *testing.T) {
 		}
 
 		for _, newAttr := range testcase.newAttributes {
-			it := dom.Select(newAttr.selectors...)
+			it := document.Select(newAttr.selectors...)
 			counter := 0
 			for it.Has() {
 				element, _ := it.Next()
@@ -326,7 +354,7 @@ func TestNew(t *testing.T) {
 		}
 
 		for _, newVal := range testcase.newValues {
-			it := dom.Select(newVal.selectors...)
+			it := document.Select(newVal.selectors...)
 			counter := 0
 			for it.Has() {
 				element, _ := it.Next()
@@ -339,7 +367,7 @@ func TestNew(t *testing.T) {
 		}
 
 		for _, insertedEl := range testcase.insertedElements {
-			it := dom.Select(insertedEl.selectors...)
+			it := document.Select(insertedEl.selectors...)
 			counter := 0
 			for it.Has() {
 				element, _ := it.Next()
@@ -357,17 +385,42 @@ func TestNew(t *testing.T) {
 			assert.Equal(t, counter, len(insertedEl.values), testcase.description)
 		}
 
+		for _, setAttribute := range testcase.setAttributes {
+			it := document.Select(setAttribute.selectors...)
+			counter := 0
+			for it.Has() {
+				element, _ := it.Next()
+				element.SetAttribute(setAttribute.keys[counter], setAttribute.values[counter])
+				counter++
+			}
+
+			assert.Equal(t, counter, len(setAttribute.values), testcase.description)
+		}
+
+		for _, newVal := range testcase.replaced {
+			it := document.Select(newVal.selectors...)
+			counter := 0
+			for it.Has() {
+				element, _ := it.Next()
+				element.ReplaceWith(newVal.values[counter])
+				assert.Equal(t, newVal.values[counter], element.Value(), testcase.description)
+				counter++
+			}
+
+			assert.Equal(t, counter, len(newVal.values), testcase.description)
+		}
+
 		result, err := os.ReadFile(path.Join(templatePath, "expect.txt"))
 		if !assert.Nil(t, err) {
 			return
 		}
 
-		render := dom.Render()
+		render := document.Render()
 		assert.Equal(t, string(result), render, testcase.description)
 	}
 }
 
-func readFromFile(path string, filters *option.Filters) (*xml.VirtualDOM, error) {
+func readFromFile(path string, filters *option.Filters) (*xml.DOM, error) {
 	template, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -383,10 +436,9 @@ func readFromFile(path string, filters *option.Filters) (*xml.VirtualDOM, error)
 //Benchmarks
 //go:embed testdata/xml006/index.xml
 var benchTemplate string
-var benchVDOM *xml.VirtualDOM
+var benchVDOM *xml.DOM
 
 func init() {
-	return
 	bufferSize := option.BufferSize(1024)
 	filters := option.NewFilters(
 		option.NewFilter("foo", "test"),
@@ -399,9 +451,9 @@ func init() {
 
 func BenchmarkXml_Render(b *testing.B) {
 	b.ReportAllocs()
-	var aXml *xml.DOM
+	var aXml *xml.Document
 	for i := 0; i < b.N; i++ {
-		aXml = benchVDOM.DOM()
+		aXml = benchVDOM.Document()
 		elemIt := aXml.Select(xml.Selector{Name: "foo"}, xml.Selector{Name: "id"})
 		for elemIt.Has() {
 			elem, _ := elemIt.Next()

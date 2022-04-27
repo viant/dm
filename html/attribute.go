@@ -1,8 +1,7 @@
 package html
 
 type (
-	attrs []*attr
-	attr  struct {
+	attr struct {
 		boundaries [2]*span
 		tag        *tag
 		index      int

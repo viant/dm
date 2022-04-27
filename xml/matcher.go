@@ -1,10 +1,10 @@
 package xml
 
 type matcher struct {
-	xml     *DOM
-	indexes []int
-	maxSize []int
-	index   int
+	document *Document
+	indexes  []int
+	maxSize  []int
+	index    int
 
 	selectors []Selector
 	currRoot  *startElement
@@ -69,8 +69,8 @@ func (m *matcher) matches(elem *startElement) bool {
 	}
 
 	for _, attributeSelector := range m.selectors[m.index].Attributes {
-		byName, ok := elem.attrByName(attributeSelector.Name)
-		if !ok || !m.checkAttributeValue(elem, byName, &attributeSelector) {
+		attrIndex, ok := elem.attrByName(attributeSelector.Name)
+		if !ok || !m.checkAttributeValue(elem, attrIndex, &attributeSelector) {
 			return false
 		}
 	}
@@ -79,12 +79,12 @@ func (m *matcher) matches(elem *startElement) bool {
 }
 
 func (m *matcher) checkAttributeValue(element *startElement, attr int, attrSelector *AttributeSelector) bool {
-	value, ok := m.xml.checkAttributeChanges(attr)
+	value, ok := m.document.checkAttributeChanges(attr)
 	if ok {
 		return m.compare(value, attrSelector)
 	}
 
-	return m.compare(m.xml.templateSlice(element.attributeValueSpan(attr)), attrSelector)
+	return m.compare(m.document.templateSlice(element.attributeValueSpan(attr)), attrSelector)
 }
 
 func (m *matcher) findElement() (*startElement, bool) {
@@ -114,12 +114,12 @@ func (m *matcher) compare(currentValue string, attrSelector *AttributeSelector) 
 	}
 }
 
-func newMatcher(dom *DOM, selectors []Selector) *matcher {
+func newMatcher(dom *Document, selectors []Selector) *matcher {
 	return &matcher{
 		indexes:   make([]int, len(selectors)),
 		maxSize:   make([]int, len(selectors)),
 		selectors: selectors,
-		currRoot:  dom.vdom.root,
-		xml:       dom,
+		currRoot:  dom.dom.root,
+		document:  dom,
 	}
 }

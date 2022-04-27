@@ -12,7 +12,7 @@ type (
 		parentIndex int
 		elemIndex   int
 		nextSibling int
-		schema      *VirtualDOM
+		dom         *DOM
 		indent      []byte
 
 		elementsIndex  map[string][]int
@@ -76,7 +76,7 @@ func (s *startElement) attrByName(attribute string) (int, bool) {
 	return -1, false
 }
 
-func newStartElement(element *xml.StartElement, schema *VirtualDOM, elemIndex int, valueStart int, attributes []*attribute, tagStart int) *startElement {
+func newStartElement(element *xml.StartElement, dom *DOM, elemIndex int, valueStart int, attributes []*attribute, tagStart int) *startElement {
 	var elemName string
 	if element != nil {
 		elemName = element.Name.Local
@@ -95,7 +95,7 @@ func newStartElement(element *xml.StartElement, schema *VirtualDOM, elemIndex in
 		},
 		name:          elemName,
 		attributes:    attributes,
-		schema:        schema,
+		dom:           dom,
 		nextSibling:   -1,
 		elementsIndex: map[string][]int{},
 	}
@@ -111,7 +111,7 @@ func (s *startElement) init() {
 func (s *startElement) indexAttributes() {
 	s.attributesName = make([]string, len(s.attributes))
 	for i, attr := range s.attributes {
-		attributeName := string(s.schema.template[attr.keyStart():attr.keyEnd()])
+		attributeName := string(s.dom.template[attr.keyStart():attr.keyEnd()])
 		s.attributesName[i] = attributeName
 	}
 

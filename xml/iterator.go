@@ -4,10 +4,10 @@ import "fmt"
 
 //Iterator iterates over matching Elements
 type Iterator struct {
-	dom     *DOM
-	current int
-	next    int
-	matcher *matcher
+	document *Document
+	current  int
+	next     int
+	matcher  *matcher
 }
 
 //Has returns true if there are more matching elements
@@ -38,15 +38,15 @@ func (i *Iterator) Next() (*Element, error) {
 	i.current = i.next
 	return &Element{
 		startElement: i.matcher.currRoot,
-		dom:          i.dom,
+		document:     i.document,
 	}, nil
 }
 
-func newIterator(xml *DOM, selectors []Selector) *Iterator {
+func newIterator(xml *Document, selectors []Selector) *Iterator {
 	return &Iterator{
-		dom:     xml,
-		current: -1,
-		next:    -1,
-		matcher: newMatcher(xml, selectors),
+		document: xml,
+		current:  -1,
+		next:     -1,
+		matcher:  newMatcher(xml, selectors),
 	}
 }

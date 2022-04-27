@@ -6,7 +6,7 @@ Similarly to the `html` in order to manipulate xml, first you need to create `Vi
 
 ```go
 template := []byte("<?xml version=...")
-vdom, err := xml.New(template)
+dom, err := xml.New(template)
 // handle error
 ```
 
@@ -16,13 +16,13 @@ filter := option.NewFilters(
 	option.NewFilter("foo", "attr1", "attr2"), 
 	option.NewFilter("name", "attr1", "attr2"),
 	)
-vdom, err := xml.New(template, bufferSize, filter)
+dom, err := xml.New(template, bufferSize, filter)
 // handle error
 ```
 
-Then you need to create a `DOM`:
+Then you need to create a `Document`:
 ```go
-dom := vdom.DOM()
+document := dom.Document()
 ```
 
 Now you can get/set Attribute, get/set Value by using selectors. 
@@ -69,7 +69,7 @@ if err != nil {
     return
 }
 
-dom := vdom.DOM()
+dom := vdom.Document()
 
 elem, ok := dom.SelectFirst(xml.Selector{Name: "foo"}, xml.Selector{Name: "id"})
 if ok {
@@ -88,8 +88,9 @@ for elemIt.Has() {
     elem.AddAttribute("attr1", "value1")
     attribute, ok := elem.Attribute("test")
     if !ok {
-        continue
-    }
+            continue
+        }
+		
     attribute.Set(strings.ToUpper(attribute.Value()))
 }
 

@@ -1,6 +1,6 @@
 package html
 
-//Buffer hold the current VirtualDOM value
+//Buffer hold the current DOM value
 type Buffer struct {
 	buffer []byte
 	pos    int

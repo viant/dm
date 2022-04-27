@@ -5,13 +5,13 @@ import "bytes"
 type (
 	//Element represents HTML Element
 	Element struct {
-		template *DOM
+		template *Document
 		tag      *tag
 	}
 
 	//Attribute represents HTML Element attribute
 	Attribute struct {
-		template *DOM
+		template *Document
 		attr     *attr
 		_parent  *Element
 	}
@@ -76,7 +76,7 @@ func (e *Element) AddAttribute(key, value string) {
 
 //Name returns Attribute Key
 func (a *Attribute) Name() string {
-	return string(a.template.vdom.template[a.attr.keyStart():a.attr.keyEnd()])
+	return string(a.template.dom.template[a.attr.keyStart():a.attr.keyEnd()])
 }
 
 //Value returns Attribute Value

@@ -5,16 +5,16 @@ import (
 	"sync/atomic"
 )
 
-//Pool represents sharable DOM instances
+//Pool represents sharable Document instances
 type Pool struct {
 	pool    *sync.Pool
 	counter int32
 	maxSize int
-	dom     *VirtualDOM
+	dom     *DOM
 }
 
-//NewPool creates DOM pool
-func NewPool(size int, dom *VirtualDOM) *Pool {
+//NewPool creates Document pool
+func NewPool(size int, dom *DOM) *Pool {
 	return &Pool{
 		pool: &sync.Pool{
 			New: func() interface{} {
@@ -27,16 +27,16 @@ func NewPool(size int, dom *VirtualDOM) *Pool {
 	}
 }
 
-//Put returns DOM to the pool
-func (p *Pool) Put(dom *DOM) {
+//Put returns Document to the pool
+func (p *Pool) Put(dom *Document) {
 	diff := int(atomic.AddInt32(&p.counter, -1))
 	if diff < p.maxSize {
 		p.pool.Put(dom.buffer)
 	}
 }
 
-//New creates or reuse recent DOM instance
-func (p *Pool) New() *DOM {
+//New creates or reuse recent Document instance
+func (p *Pool) New() *Document {
 	atomic.AddInt32(&p.counter, 1)
-	return p.dom.DOM(p.pool.New().(*Buffer))
+	return p.dom.Document(p.pool.New().(*Buffer))
 }

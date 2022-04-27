@@ -6,7 +6,7 @@ import (
 )
 
 type builder struct {
-	schema       *VirtualDOM
+	dom          *DOM
 	root         *startElement
 	elements     []*startElement
 	indexesStack []int
@@ -40,7 +40,7 @@ func (b *builder) addElement(actual xml.StartElement, valueStart int, raw []byte
 	attributes := make([]*attribute, len(attributesSpan))
 	counter := 0
 	for i, spans := range attributesSpan {
-		if attributeFilter != nil && !attributeFilter.Matches(b.schema.templateSlice(spans[0])) {
+		if attributeFilter != nil && !attributeFilter.Matches(b.dom.templateSlice(spans[0])) {
 			continue
 		}
 
@@ -50,7 +50,7 @@ func (b *builder) addElement(actual xml.StartElement, valueStart int, raw []byte
 	}
 
 	attributes = attributes[:counter]
-	element := newStartElement(&actual, b.schema, len(b.elements), valueStart, attributes, offset)
+	element := newStartElement(&actual, b.dom, len(b.elements), valueStart, attributes, offset)
 	b.addStartElement(element)
 	return nil
 }
@@ -95,11 +95,11 @@ func (b *builder) addCharData(offset int, actual xml.CharData) {
 	}
 }
 
-func newBuilder(vxml *VirtualDOM) *builder {
-	element := newStartElement(nil, vxml, 0, 0, []*attribute{}, 0)
+func newBuilder(dom *DOM) *builder {
+	element := newStartElement(nil, dom, 0, 0, []*attribute{}, 0)
 	b := &builder{
-		root:   element,
-		schema: vxml,
+		root: element,
+		dom:  dom,
 	}
 
 	b.addStartElement(element)

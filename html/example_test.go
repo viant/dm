@@ -19,7 +19,7 @@ func ExampleNew() {
 </body>
 </html>`
 
-	vdom, err := New(template)
+	dom, err := New(template)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -31,9 +31,9 @@ func ExampleNew() {
 	)
 
 	bufferSize := option.BufferSize(1024)
-	dom := vdom.DOM(filter, bufferSize)
+	document := dom.Document(filter, bufferSize)
 
-	elemIt := dom.Select("div", "hidden")
+	elemIt := document.Select("div", "hidden")
 	for elemIt.Has() {
 		elem, _ := elemIt.Next()
 		fmt.Println(elem.InnerHTML())
@@ -45,14 +45,14 @@ func ExampleNew() {
 		}
 	}
 
-	attributeIt := dom.SelectAttributes("img", "src", "[src]")
+	attributeIt := document.SelectAttributes("img", "src", "[src]")
 	for attributeIt.Has() {
 		attribute, _ := attributeIt.Next()
 		attribute.Set("abcdef.jpg")
 		fmt.Println(attribute.Value())
 	}
 
-	fmt.Println(dom.Render())
+	fmt.Println(document.Render())
 
 	// Output:
 	//This is div inner

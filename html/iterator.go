@@ -4,7 +4,7 @@ import "fmt"
 
 type (
 	iterator struct {
-		template  *DOM
+		template  *Document
 		current   int
 		next      int
 		selectors []string
@@ -22,7 +22,7 @@ type (
 		nextAttr    *attr
 		currentAttr *attr
 		matcher     *attributeMatcher
-		dom         *DOM
+		dom         *Document
 	}
 )
 

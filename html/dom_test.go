@@ -106,7 +106,7 @@ func TestDOM(t *testing.T) {
 			continue
 		}
 
-		session := dom.DOM()
+		session := dom.Document()
 		for _, newAttr := range testcase.newAttributes {
 			attrIterator := session.SelectAttributes(newAttr.tag, newAttr.attribute, newAttr.oldValue)
 			for attrIterator.Has() {
@@ -167,7 +167,7 @@ func TestDOM_Element_NewAttribute(t *testing.T) {
 		return
 	}
 
-	dom := vdom.DOM()
+	dom := vdom.Document()
 	tagIt := dom.Select("p", "class", "p-100")
 	for tagIt.Has() {
 		aTag, _ := tagIt.Next()
@@ -199,7 +199,7 @@ func TestDOM_Element_NewAttribute(t *testing.T) {
 	assertly.AssertValues(t, string(result), render)
 }
 
-func readFromFile(path string, options ...option.Option) (*html.VirtualDOM, error) {
+func readFromFile(path string, options ...option.Option) (*html.DOM, error) {
 	template, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -213,7 +213,7 @@ func readFromFile(path string, options ...option.Option) (*html.VirtualDOM, erro
 }
 
 //Benchmarks
-var vdom *html.VirtualDOM
+var vdom *html.DOM
 
 func init() {
 	var err error
@@ -242,7 +242,7 @@ func BenchmarkVirtualDOM_DOM(b *testing.B) {
 	var result string
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		dom := vdom.DOM()
+		dom := vdom.Document()
 		imgSrcIt := dom.SelectAttributes("img", "src")
 		for imgSrcIt.Has() {
 			attribute, _ := imgSrcIt.Next()

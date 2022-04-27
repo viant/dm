@@ -2,7 +2,7 @@ package html
 
 type (
 	elementMatcher struct {
-		dom   *DOM
+		dom   *Document
 		index int
 
 		selectors  []string
@@ -33,11 +33,11 @@ func (m *elementMatcher) match() int {
 }
 
 func (m *elementMatcher) matchNextTag() int {
-	if m.groupIndex == -1 || m.offset >= len(m.dom.vdom.tagsGrouped[m.groupIndex]) {
+	if m.groupIndex == -1 || m.offset >= len(m.dom.dom.tagsGrouped[m.groupIndex]) {
 		return -1
 	}
 
-	for ; m.offset < len(m.dom.vdom.tagsGrouped[m.groupIndex]); m.offset++ {
+	for ; m.offset < len(m.dom.dom.tagsGrouped[m.groupIndex]); m.offset++ {
 		tagIndex := m.currentGroup()[m.offset]
 		if m.dom.tagsRemoved[tagIndex] {
 			continue
@@ -52,10 +52,10 @@ func (m *elementMatcher) matchNextTag() int {
 }
 
 func (m *elementMatcher) currentGroup() []int {
-	return m.dom.vdom.tagsGrouped[m.groupIndex]
+	return m.dom.dom.tagsGrouped[m.groupIndex]
 }
 
-func newElementMatcher(d *DOM, selectors []string) *elementMatcher {
+func newElementMatcher(d *Document, selectors []string) *elementMatcher {
 	m := &elementMatcher{
 		dom:       d,
 		selectors: selectors,
@@ -70,7 +70,7 @@ func (m *elementMatcher) init() {
 		return
 	}
 
-	m.groupIndex = m.dom.vdom.index.tagIndex(m.selectors[0], false)
+	m.groupIndex = m.dom.dom.index.tagIndex(m.selectors[0], false)
 }
 
 func (m *elementMatcher) matchTagAttributes(tagIndex int) bool {
@@ -86,7 +86,7 @@ func (m *elementMatcher) matchTagAttributes(tagIndex int) bool {
 	return m.dom.matchAttributeValue(attrByName, m.selectors)
 }
 
-func newAttributeMatcher(dom *DOM, selectors []string) *attributeMatcher {
+func newAttributeMatcher(dom *Document, selectors []string) *attributeMatcher {
 	elemNameSelector := selectors
 	if len(selectors) > 1 {
 		elemNameSelector = selectors[:1]
@@ -108,10 +108,16 @@ func (a *attributeMatcher) match() *attr {
 			return nil
 		}
 
-		if len(a.selectors) <= 1 && a.attributeOffset < len(a.currTag.attrs)-1 {
-			anAttr := a.currTag.attrs[a.attributeOffset]
-			a.attributeOffset++
-			return anAttr
+		if len(a.selectors) <= 1 {
+			if a.attributeOffset < len(a.currTag.attrs)-1 {
+				anAttr := a.currTag.attrs[a.attributeOffset]
+				a.attributeOffset++
+				return anAttr
+			} else {
+				a.attributeOffset = 0
+				a.matchNextElem()
+				continue
+			}
 		}
 
 		attrByName, ok := a.currTag.attributeByName(a.selectors[1])
@@ -130,6 +136,8 @@ func (a *attributeMatcher) init() {
 
 func (a *attributeMatcher) matchNextElem() {
 	tagIndex := a.elemMatcher.match()
+	a.attributeOffset = 0
+
 	if tagIndex == -1 {
 		a.currTag = nil
 		return

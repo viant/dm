@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<foo test="true">
+    <id>1</id>
+    <name>foo name</name>
+    <type>fType</type>
+    <quantity>123</quantity>
+    <price>50.5</price>
+</foo>
