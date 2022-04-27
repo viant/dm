@@ -35,7 +35,7 @@ func NewFilters(xpaths ...string) ([]*option.Filter, error) {
 			names[j] = attributeSelector.Name
 		}
 
-		filters[i] = option.NewFilter(selector.Name, names...)
+		filters[i] = option.CaseSensitiveFilter(selector.Name, names...)
 	}
 
 	return filters, nil
@@ -53,7 +53,9 @@ func parse(cursor *parsly.Cursor, selectors *[]Selector, valueOptional bool) err
 	switch matched.Code {
 	case parsly.EOF:
 		if elemName != "" {
-			*selectors = append(*selectors, ElementSelector(elemName))
+			*selectors = append(*selectors, Selector{
+				Name: elemName,
+			})
 		}
 
 	case attrBlockToken:
@@ -65,7 +67,10 @@ func parse(cursor *parsly.Cursor, selectors *[]Selector, valueOptional bool) err
 			return err
 		}
 
-		*selectors = append(*selectors, ElementSelector(elemName, attrs...))
+		*selectors = append(*selectors, Selector{
+			Name:       elemName,
+			Attributes: attrs,
+		})
 
 		cursor.MatchOne(newElem)
 		if matched.Code == newElemToken {
@@ -73,7 +78,7 @@ func parse(cursor *parsly.Cursor, selectors *[]Selector, valueOptional bool) err
 		}
 
 	case newElemToken:
-		*selectors = append(*selectors, ElementSelector(elemName))
+		*selectors = append(*selectors, Selector{Name: elemName})
 		return parse(cursor, selectors, valueOptional)
 
 	default:

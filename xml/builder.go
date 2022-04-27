@@ -25,7 +25,7 @@ func (b *builder) addElement(actual xml.StartElement, valueStart int, raw []byte
 	var attributeFilter *option.Filter
 	if b.filters != nil {
 		var ok bool
-		attributeFilter, ok = b.filters.ElementFilter(elementFullName(&actual))
+		attributeFilter, ok = b.filters.ElementFilter(elementFullName(&actual), true)
 		if !ok {
 			b.skipped++
 			return nil

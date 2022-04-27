@@ -69,7 +69,7 @@ outer:
 			nodeSpan := dataSpan(node)
 			tagName, _ := node.TagName()
 			if d.filter != nil {
-				if _, ok := d.filter.ElementFilter(string(tagName)); !ok {
+				if _, ok := d.filter.ElementFilter(string(tagName), false); !ok {
 					continue outer
 				}
 			}
@@ -83,7 +83,7 @@ outer:
 		case html.EndTagToken:
 			tagName, _ := node.TagName()
 			if d.filter != nil {
-				if _, ok := d.filter.ElementFilter(string(tagName)); !ok {
+				if _, ok := d.filter.ElementFilter(string(tagName), false); !ok {
 					continue outer
 				}
 			}
@@ -101,7 +101,7 @@ func buildAllAttributes(z *html.Tokenizer, builder *builder) {
 }
 
 func buildFilteredAttributes(template []byte, tagName []byte, z *html.Tokenizer, builder *builder, tagFilter *option.Filters) {
-	attributeFilter, ok := tagFilter.ElementFilter(string(tagName))
+	attributeFilter, ok := tagFilter.ElementFilter(string(tagName), false)
 	if !ok {
 		return
 	}

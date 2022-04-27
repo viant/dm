@@ -15,14 +15,6 @@ type Selector struct {
 	Attributes []AttributeSelector
 }
 
-//ElementSelector returns new Selector with only Element Name.
-func ElementSelector(name string, attributes ...AttributeSelector) Selector {
-	return Selector{
-		Name:       name,
-		Attributes: attributes,
-	}
-}
-
 //NewSelectors creates Selectors from xpath
 func NewSelectors(xpath string) ([]Selector, error) {
 	selectors := make([]Selector, 0)

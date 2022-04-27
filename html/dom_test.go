@@ -62,8 +62,8 @@ func TestDOM(t *testing.T) {
 		{
 			uri: "template004",
 			newAttributes: []attrSearch{
-				{tag: "img", attribute: "src", oldValue: "[src]", newValue: "newSrc", fullMatch: true},
-				{tag: "img", attribute: "src", oldValue: "newSrc", newValue: "abcdef", fullMatch: true},
+				{tag: "IMG", attribute: "src", oldValue: "[src]", newValue: "newSrc", fullMatch: true},
+				{tag: "img", attribute: "SRC", oldValue: "newSrc", newValue: "abcdef", fullMatch: true},
 			},
 			innerHTMLGet: []innerHTMLSearch{
 				{tag: "head", value: `
@@ -74,7 +74,7 @@ func TestDOM(t *testing.T) {
 		{
 			uri: "template005",
 			newAttributes: []attrSearch{
-				{tag: "img", attribute: "src", oldValue: "[src]", newValue: "newSrc"},
+				{tag: "IMG", attribute: "SRC", oldValue: "[src]", newValue: "newSrc"},
 				{tag: "img", attribute: "alt", oldValue: "alt", newValue: "newAlt"},
 			},
 			innerHTMLGet: []innerHTMLSearch{
@@ -94,6 +94,17 @@ func TestDOM(t *testing.T) {
 			attributes: option.NewFilters(
 				option.NewFilter("script"),
 			),
+		},
+		{
+			uri: "template009",
+			newAttributes: []attrSearch{
+				{
+					attribute: "SRC",
+					oldValue:  "[placeholder]",
+					newValue:  "index.js",
+					tag:       "script",
+				},
+			},
 		},
 	}
 

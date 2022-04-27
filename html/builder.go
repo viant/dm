@@ -39,6 +39,8 @@ func (b *builder) attribute(spans [2]span) {
 }
 
 func (b *builder) newTag(tagName string, start int, tagSpan span, selfClosing bool) {
+	tagName = strings.ToLower(tagName)
+
 	aTag := &tag{
 		vdom:      b.vdom,
 		attrIndex: map[string]int{},

@@ -3,6 +3,7 @@ package html
 import (
 	"bytes"
 	"github.com/viant/dm/option"
+	"strings"
 )
 
 type (
@@ -44,20 +45,24 @@ func (d *DOM) Document(options ...option.Option) *Document {
 
 //Select returns ElementIterator to iterate over HTML Elements
 func (d *Document) Select(selectors ...string) *ElementIterator {
+	newSelectors := normalize(selectors)
+
 	return &ElementIterator{
 		iterator: iterator{
 			template:  d,
 			current:   -1,
 			next:      -1,
-			selectors: selectors,
+			selectors: newSelectors,
 		},
-		matcher: newElementMatcher(d, selectors),
+		matcher: newElementMatcher(d, newSelectors),
 		index:   -1,
 	}
 }
 
 func (d *Document) SelectFirst(selectors ...string) (*Element, bool) {
-	next := newElementMatcher(d, selectors).match()
+	newSelectors := normalize(selectors)
+
+	next := newElementMatcher(d, newSelectors).match()
 	if next == -1 {
 		return nil, false
 	}
@@ -70,9 +75,11 @@ func (d *Document) SelectFirst(selectors ...string) (*Element, bool) {
 
 //SelectAttributes returns AttributeIterator to iterate over HTML Attributes
 func (d *Document) SelectAttributes(selectors ...string) *AttributeIterator {
+	newSelectors := normalize(selectors)
+
 	return &AttributeIterator{
 		dom:     d,
-		matcher: newAttributeMatcher(d, selectors),
+		matcher: newAttributeMatcher(d, newSelectors),
 	}
 }
 
@@ -184,7 +191,12 @@ func (d *Document) attrValueOffset(anAttr *attr) int {
 }
 
 func (d *Document) attributeKey(anAttr *attr) []byte {
-	return d.buffer.slice(anAttr.boundaries[0], d.attrOffset(anAttr.index-1), d.attrOffset(anAttr.index-1))
+	keyOffset := 0
+	if anAttr.index > 0 {
+		keyOffset = d.attrOffset(anAttr.index - 1)
+	}
+
+	return d.buffer.slice(anAttr.boundaries[0], keyOffset, keyOffset)
 }
 
 func (d *Document) attributeValue(anAttr *attr) []byte {
@@ -235,4 +247,22 @@ func zeroIfNegative(value int) int {
 	}
 
 	return value
+}
+
+func normalize(selectors []string) []string {
+	result := make([]string, len(selectors))
+
+	if len(selectors) > 0 {
+		result[0] = strings.ToLower(selectors[0])
+	}
+
+	if len(selectors) > 1 {
+		result[1] = strings.ToLower(selectors[1])
+	}
+
+	if len(selectors) > 2 {
+		result[2] = selectors[2]
+	}
+
+	return result
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/viant/dm/option"
 )
 
-//DOM represents VirtualDOM structure
+//DOM represents DOM structure
 type DOM struct {
 	template []byte
 	*builder

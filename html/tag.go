@@ -28,7 +28,7 @@ func (t tags) tagOffset(index int, offsets []int) int {
 }
 
 func (t *tag) addAttribute(spans [2]span, index int) {
-	t.attrIndex[string(t.vdom.template[spans[0].start:spans[0].end])] = len(t.attrs)
+	t.attrIndex[strings.ToLower(string(t.vdom.template[spans[0].start:spans[0].end]))] = len(t.attrs)
 	t.attrs = append(t.attrs, &attr{
 		boundaries: [2]*span{
 			{
@@ -58,6 +58,7 @@ func (t *tag) attributeByName(name string) (*attr, bool) {
 	}
 
 	for _, attribute := range t.attrs {
+		//TODO: resolve attr name lowercased before
 		if strings.EqualFold(string(t.vdom.template[attribute.keyStart():attribute.keyEnd()]), name) {
 			return attribute, true
 		}
