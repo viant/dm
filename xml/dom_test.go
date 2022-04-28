@@ -280,6 +280,17 @@ func TestNew(t *testing.T) {
 				},
 			},
 		},
+		{
+			uri:         "xml012",
+			description: "set attribute, no other attr present",
+			setAttributes: []attributeChanges{
+				{
+					selectors: []xml.Selector{{Name: "foo"}},
+					keys:      []string{"test"},
+					values:    []string{"true"},
+				},
+			},
+		},
 	}
 	//for i, testcase := range testcases[len(testcases)-1:] {
 	for i, testcase := range testcases {

@@ -21,7 +21,9 @@ type (
 		attributesName   []string
 		attributes       []*attribute
 		childrenAttrSize int
-		tag              span
+
+		position   span
+		tagNameEnd int
 	}
 
 	attribute struct {
@@ -58,7 +60,7 @@ func (s *startElement) append(child *startElement) {
 	child.parent = s
 
 	child.indent = s.children[0].indent
-	s.value.end = child.tag.end
+	s.value.end = child.position.end
 }
 
 func (s *startElement) attrByName(attribute string) (int, bool) {
@@ -76,7 +78,7 @@ func (s *startElement) attrByName(attribute string) (int, bool) {
 	return -1, false
 }
 
-func newStartElement(element *xml.StartElement, dom *DOM, elemIndex int, valueStart int, attributes []*attribute, tagStart int) *startElement {
+func newStartElement(element *xml.StartElement, dom *DOM, elemIndex int, valueStart int, attributes []*attribute, tagStart int, raw []byte) *startElement {
 	var elemName string
 	if element != nil {
 		elemName = element.Name.Local
@@ -90,7 +92,7 @@ func newStartElement(element *xml.StartElement, dom *DOM, elemIndex int, valueSt
 		value: span{
 			start: valueStart,
 		},
-		tag: span{
+		position: span{
 			start: tagStart,
 		},
 		name:          elemName,
@@ -98,6 +100,7 @@ func newStartElement(element *xml.StartElement, dom *DOM, elemIndex int, valueSt
 		dom:           dom,
 		nextSibling:   -1,
 		elementsIndex: map[string][]int{},
+		tagNameEnd:    tagNameEnd(tagStart, raw),
 	}
 
 	elem.init()

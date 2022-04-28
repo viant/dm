@@ -52,7 +52,7 @@ func (b *builder) addElement(actual xml.StartElement, valueStart int, raw []byte
 	}
 
 	attributes = attributes[:counter]
-	element := newStartElement(&actual, b.dom, len(b.elements), valueStart, attributes, offset)
+	element := newStartElement(&actual, b.dom, len(b.elements), valueStart, attributes, offset, raw)
 	b.addStartElement(element)
 	return nil
 }
@@ -80,7 +80,7 @@ func (b *builder) closeElement(offset int) {
 		return
 	}
 
-	b.elements[b.indexesStack[len(b.indexesStack)-1]].tag.end = offset
+	b.elements[b.indexesStack[len(b.indexesStack)-1]].position.end = offset
 	b.indexesStack = b.indexesStack[:len(b.indexesStack)-1]
 }
 
@@ -100,7 +100,7 @@ func (b *builder) addCharData(offset int, actual xml.CharData) {
 }
 
 func newBuilder(dom *DOM) *builder {
-	element := newStartElement(nil, dom, 0, 0, []*attribute{}, 0)
+	element := newStartElement(nil, dom, 0, 0, []*attribute{}, 0, []byte{})
 	b := &builder{
 		root:   element,
 		dom:    dom,

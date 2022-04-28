@@ -102,3 +102,35 @@ func TestExtractAttributes(t *testing.T) {
 		assertly.AssertValues(t, testcase.output, attributes, testcase.template)
 	}
 }
+
+func TestTagNameEnd(t *testing.T) {
+	testcases := []struct {
+		description string
+		input       string
+		offset      int
+		expect      int
+	}{
+		{
+			input:  ` <foo test="true">`,
+			offset: 0,
+			expect: 5,
+		},
+		{
+			input:  ` <foo test="true">`,
+			offset: 10,
+			expect: 15,
+		},
+		{
+			input:  `<foo>`,
+			expect: 4,
+		},
+		{
+			input:  `<foo/>`,
+			expect: 4,
+		},
+	}
+
+	for _, testcase := range testcases {
+		assert.Equal(t, testcase.expect, tagNameEnd(testcase.offset, []byte(testcase.input)), testcase.description)
+	}
+}

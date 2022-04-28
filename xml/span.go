@@ -107,3 +107,24 @@ outer:
 
 	return [2]*span{}, -1, fmt.Errorf("not found attribute value %v", input)
 }
+
+func tagNameEnd(offset int, input []byte) int {
+	var i int
+	for i < len(input) && input[i] != '<' {
+		i++
+	}
+
+	for i < len(input) && isWhitespace(input[i]) {
+		i++
+	}
+
+	for i < len(input) {
+		switch input[i] {
+		case ' ', '\n', '\t', '\r', '\v', '\f', '/', '>':
+			return offset + i
+		}
+		i++
+	}
+
+	return -1
+}

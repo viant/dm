@@ -31,7 +31,7 @@ func (d *Document) render(lowerBound, upperBound int) string {
 	prevEnd, i := d.renderElem(false, elem, elemChanges)
 	for i < upperBound {
 		elem = d.dom.elements[i]
-		d.buffer.appendBytes(d.dom.template[prevEnd:elem.tag.start])
+		d.buffer.appendBytes(d.dom.template[prevEnd:elem.position.start])
 		elemChanges, _ = d.elementMutations(i)
 
 		prevEnd, i = d.renderElem(true, elem, elemChanges)
@@ -49,13 +49,13 @@ func (d *Document) render(lowerBound, upperBound int) string {
 func (d *Document) renderElem(withTag bool, elem *startElement, changes *elementChanges) (nextEnd int, nextElemIndex int) {
 	if changes != nil && changes.replacedChanged {
 		d.buffer.appendBytes([]byte(changes.replacedWith))
-		return elem.tag.end, d.nextNotDescendant(elem)
+		return elem.position.end, d.nextNotDescendant(elem)
 	}
 
 	d.renderElementsBefore(changes)
 
 	if withTag {
-		d.renderTag(elem.tag.start, elem, changes)
+		d.renderTag(elem.position.start, elem, changes)
 	}
 
 	return d.renderValue(elem.value.start, elem, changes, !withTag)
@@ -133,18 +133,21 @@ func (d *Document) insertBefore(index int, value string) {
 }
 
 func (d *Document) renderTag(prevEnd int, elem *startElement, elemChanges *elementChanges) int {
-	d.buffer.appendBytes(d.dom.template[prevEnd:elem.tag.start])
+	d.buffer.appendBytes(d.dom.template[prevEnd:elem.tagNameEnd])
 
-	prevEnd = elem.tag.start
+	prevEnd = elem.tagNameEnd
 	for _, attr := range elem.attributes {
 		d.buffer.appendBytes(d.dom.template[prevEnd:attr.valueStart()])
 		d.renderAttributeValue(attr)
 		prevEnd = attr.valueEnd()
 	}
 
-	if elemChanges != nil {
+	if len(elem.attributes) > 0 {
 		d.buffer.appendByte(d.dom.template[prevEnd])
 		prevEnd++
+	}
+
+	if elemChanges != nil {
 		for _, newAttr := range elemChanges.newAttributes {
 			d.buffer.appendByte(' ')
 			d.buffer.appendBytes([]byte(newAttr.key))
@@ -167,8 +170,8 @@ func (d *Document) renderValue(prevEnd int, elem *startElement, elemChanges *ele
 	}
 
 	if len(elem.children) > 0 {
-		d.buffer.appendBytes(d.dom.template[prevEnd:elem.children[0].tag.start])
-		return elem.children[0].tag.start, elem.elemIndex + 1
+		d.buffer.appendBytes(d.dom.template[prevEnd:elem.children[0].position.start])
+		return elem.children[0].position.start, elem.elemIndex + 1
 	}
 
 	if valueOnly {
@@ -176,9 +179,9 @@ func (d *Document) renderValue(prevEnd int, elem *startElement, elemChanges *ele
 		return elem.value.end, elem.elemIndex + 1
 	}
 
-	d.buffer.appendBytes(d.dom.template[elem.value.start:elem.tag.end])
+	d.buffer.appendBytes(d.dom.template[elem.value.start:elem.position.end])
 
-	return elem.tag.end, elem.elemIndex + 1
+	return elem.position.end, elem.elemIndex + 1
 }
 
 func (d *Document) renderElementsBefore(elemChanges *elementChanges) {
