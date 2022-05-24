@@ -76,7 +76,7 @@ outer:
 
 			d.builder.newTag(string(tagName), rawSpan(node).end, nodeSpan, html.SelfClosingTagToken == next)
 			if d.filter == nil {
-				buildAllAttributes(node, d.builder)
+				buildAllAttributes(template, node, d.builder)
 			} else {
 				buildFilteredAttributes(template, tagName, node, d.builder, d.filter)
 			}
@@ -93,19 +93,32 @@ outer:
 	return nil
 }
 
-func buildAllAttributes(z *html.Tokenizer, builder *builder) {
+func buildAllAttributes(template []byte, z *html.Tokenizer, builder *builder) {
 	attributes := attributesSpan(z)
+	replaceWithSingleQuote(template, attributes)
+
 	for _, attribute := range attributes {
 		builder.attribute(attribute)
 	}
 }
 
+func replaceWithSingleQuote(template []byte, attributes [][2]span) {
+	for _, attribute := range attributes {
+		attrValue := attribute[1]
+		template[attrValue.start-1] = '"'
+		template[attrValue.end] = '"'
+	}
+}
+
 func buildFilteredAttributes(template []byte, tagName []byte, z *html.Tokenizer, builder *builder, tagFilter *option.Filters) {
+	attributes := attributesSpan(z)
+	replaceWithSingleQuote(template, attributes)
+
 	attributeFilter, ok := tagFilter.ElementFilter(string(tagName), false)
 	if !ok {
 		return
 	}
-	attributes := attributesSpan(z)
+
 	for _, attribute := range attributes {
 		if ok := attributeFilter.Matches(string(template[attribute[0].start:attribute[0].end])); !ok {
 			continue
