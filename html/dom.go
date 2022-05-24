@@ -104,7 +104,21 @@ func buildAllAttributes(template []byte, z *html.Tokenizer, builder *builder) {
 
 func replaceWithSingleQuote(template []byte, attributes [][2]span) {
 	for _, attribute := range attributes {
+		keyEnd := attribute[0].end
 		attrValue := attribute[1]
+
+		var foundEqual bool
+		for ; keyEnd < attrValue.start; keyEnd++ {
+			if template[keyEnd] == '=' {
+				foundEqual = true
+				break
+			}
+		}
+
+		if !foundEqual {
+			continue
+		}
+
 		template[attrValue.start-1] = '"'
 		template[attrValue.end] = '"'
 	}
