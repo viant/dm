@@ -1,6 +1,9 @@
 package html
 
-import "strings"
+import (
+	"bytes"
+	"strings"
+)
 
 type (
 	builder struct {
@@ -78,15 +81,17 @@ func (b *builder) newTag(tagName string, start int, tagSpan span, selfClosing bo
 	b.tags = append(b.tags, aTag)
 }
 
-func (b *builder) closeTag(end int) {
-	b.depth--
-
+func (b *builder) closeTag(end int, name []byte) {
 	lastTag := b.tags[b.indexesStack[len(b.indexesStack)-1]]
+
 	if lastTag.innerHTML.end == 0 {
 		lastTag.innerHTML.end = end
 	}
 
-	b.indexesStack = b.indexesStack[:len(b.indexesStack)-1]
+	if bytes.EqualFold(b.vdom.template[lastTag.tagName.start:lastTag.tagName.end], name) {
+		b.depth--
+		b.indexesStack = b.indexesStack[:len(b.indexesStack)-1]
+	}
 }
 
 func (b *builder) lastTag() int {

@@ -87,7 +87,7 @@ outer:
 					continue outer
 				}
 			}
-			d.builder.closeTag(rawSpan(node).start)
+			d.builder.closeTag(rawSpan(node).start, tagName)
 		}
 	}
 	return nil
