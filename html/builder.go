@@ -82,6 +82,10 @@ func (b *builder) newTag(tagName string, start int, tagSpan span, selfClosing bo
 }
 
 func (b *builder) closeTag(end int, name []byte) {
+	if len(b.indexesStack) == 0 {
+		return
+	}
+
 	lastTag := b.tags[b.indexesStack[len(b.indexesStack)-1]]
 
 	if lastTag.innerHTML.end == 0 {

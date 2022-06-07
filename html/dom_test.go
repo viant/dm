@@ -112,6 +112,9 @@ func TestDOM(t *testing.T) {
 		{
 			uri: "template011",
 		},
+		{
+			uri: "template012",
+		},
 	}
 
 	//for _, testcase := range testcases[len(testcases)-1:] {
