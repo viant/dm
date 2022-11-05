@@ -6,19 +6,19 @@ type (
 	builder struct {
 		attributes        attrs
 		tags              tags
-		indexesStack      []int
-		tagCounter        int
-		depth             int
-		tagsGrouped       [][]int
-		attributesGrouped [][]int
+		indexesStack      []int32
+		tagCounter        int32
+		depth             int32
+		tagsGrouped       [][]int32
+		attributesGrouped [][]int32
 		*index
 	}
 )
 
 func newBuilder() *builder {
 	builder := &builder{
-		tagsGrouped:       make([][]int, lastTag),
-		attributesGrouped: make([][]int, lastAttribute),
+		tagsGrouped:       make([][]int32, lastTag),
+		attributesGrouped: make([][]int32, lastAttribute),
 		index:             newIndex(),
 	}
 
@@ -39,10 +39,10 @@ func newBuilder() *builder {
 func (b *builder) attribute(template []byte, spans [2]span) {
 	attributeName := string(template[spans[0].start:spans[0].end])
 	attributeGroup := b.index.attributeIndex(attributeName, true)
-	if attributeGroup < len(b.attributesGrouped) {
-		b.attributesGrouped[attributeGroup] = append(b.attributesGrouped[attributeGroup], len(b.attributes))
+	if attributeGroup < int32(len(b.attributesGrouped)) {
+		b.attributesGrouped[attributeGroup] = append(b.attributesGrouped[attributeGroup], int32(len(b.attributes)))
 	} else {
-		b.attributesGrouped = append(b.attributesGrouped, []int{len(b.attributes)})
+		b.attributesGrouped = append(b.attributesGrouped, []int32{int32(len(b.attributes))})
 	}
 
 	b.attributes = append(b.attributes, &attr{
@@ -60,11 +60,11 @@ func (b *builder) attribute(template []byte, spans [2]span) {
 	})
 }
 
-func (b *builder) newTag(tagName string, start int, tagSpan span, selfClosing bool) {
+func (b *builder) newTag(tagName string, start int32, tagSpan span, selfClosing bool) {
 	aTag := &tag{
 		depth: b.depth,
 		innerHTML: &span{
-			start: start,
+			start: int(start),
 		},
 		tagName: &span{
 			start: tagSpan.start,
@@ -74,19 +74,19 @@ func (b *builder) newTag(tagName string, start int, tagSpan span, selfClosing bo
 	}
 
 	if strings.EqualFold(tagName, "script") {
-		aTag.innerHTML.end = start
+		aTag.innerHTML.end = int(start)
 	}
 
 	tagGroupPosition := b.index.tagIndex(tagName, true)
-	if tagGroupPosition >= len(b.tagsGrouped) {
-		b.tagsGrouped = append(b.tagsGrouped, []int{aTag.index})
+	if tagGroupPosition >= int32(len(b.tagsGrouped)) {
+		b.tagsGrouped = append(b.tagsGrouped, []int32{aTag.index})
 	} else {
 		b.tagsGrouped[tagGroupPosition] = append(b.tagsGrouped[tagGroupPosition], aTag.index)
 	}
 
 	b.tagCounter++
 	if selfClosing {
-		aTag.innerHTML.end = start
+		aTag.innerHTML.end = int(start)
 	} else {
 		b.depth++
 		b.indexesStack = append(b.indexesStack, b.tagCounter)
@@ -95,21 +95,21 @@ func (b *builder) newTag(tagName string, start int, tagSpan span, selfClosing bo
 	b.tags = append(b.tags, aTag)
 }
 
-func (b *builder) closeTag(end int) {
+func (b *builder) closeTag(end int32) {
 	b.depth--
 
 	lastTag := b.tags[b.indexesStack[len(b.indexesStack)-1]]
 	if lastTag.innerHTML.end == 0 {
-		lastTag.innerHTML.end = end
+		lastTag.innerHTML.end = int(end)
 	}
 
 	b.indexesStack = b.indexesStack[:len(b.indexesStack)-1]
 }
 
 func (b *builder) attributesBuilt() {
-	b.tags[b.lastTag()].attrEnd = len(b.attributes)
+	b.tags[b.lastTag()].attrEnd = int32(len(b.attributes))
 }
 
-func (b *builder) lastTag() int {
-	return len(b.tags) - 1
+func (b *builder) lastTag() int32 {
+	return int32(len(b.tags)) - 1
 }

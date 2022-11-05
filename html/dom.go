@@ -2,6 +2,7 @@ package html
 
 import (
 	"bytes"
+
 	"github.com/viant/dm/option"
 )
 
@@ -14,19 +15,19 @@ type (
 	}
 
 	mutations struct {
-		attributesStart []int
-		innerHTMLSize   []int
+		attributesStart []int32
+		innerHTMLSize   []int32
 		tagsRemoved     []bool
 	}
 )
 
-//DOM creates new DOM
+// DOM creates new DOM
 func (v *VirtualDOM) DOM(options ...option.Option) *DOM {
 	session := &DOM{
 		dom: v,
 		mutations: mutations{
-			attributesStart: make([]int, len(v.attributes)),
-			innerHTMLSize:   make([]int, len(v.tags)),
+			attributesStart: make([]int32, len(v.attributes)),
+			innerHTMLSize:   make([]int32, len(v.tags)),
 			tagsRemoved:     make([]bool, len(v.tags)),
 		},
 	}
@@ -41,7 +42,7 @@ func (v *VirtualDOM) DOM(options ...option.Option) *DOM {
 	return session
 }
 
-//Select returns ElementIterator to iterate over HTML Elements
+// Select returns ElementIterator to iterate over HTML Elements
 func (d *DOM) Select(selectors ...string) *ElementIterator {
 	return &ElementIterator{
 		iterator: iterator{
@@ -54,7 +55,7 @@ func (d *DOM) Select(selectors ...string) *ElementIterator {
 	}
 }
 
-//SelectAttributes returns AttributeIterator to iterate over HTML Attributes
+// SelectAttributes returns AttributeIterator to iterate over HTML Attributes
 func (d *DOM) SelectAttributes(selectors ...string) *AttributeIterator {
 	return &AttributeIterator{
 		iterator: iterator{
@@ -67,27 +68,27 @@ func (d *DOM) SelectAttributes(selectors ...string) *AttributeIterator {
 	}
 }
 
-func (d *DOM) attribute(i int) *attr {
+func (d *DOM) attribute(i int32) *attr {
 	return d.dom.attributes[i]
 }
 
-func (d *DOM) setAttributeByIndex(i int, value []byte) {
+func (d *DOM) setAttributeByIndex(i int32, value []byte) {
 	d.updateAttributeValue(i, value)
 }
 
-func (d *DOM) updateAttributeValue(i int, newValue []byte) {
+func (d *DOM) updateAttributeValue(i int32, newValue []byte) {
 	currOffset := d.buffer.replaceBytes(d.attribute(i).boundaries[1], d.attributesStart[i], d.offsetDiff(i), newValue)
 	d.attributesStart[i] += currOffset
 	d.updateAttributesStart(i, currOffset)
 }
 
-func (d *DOM) updateAttributesStart(i int, currOffset int) {
-	for j := i + 1; j < len(d.dom.attributes); j++ {
+func (d *DOM) updateAttributesStart(i int32, currOffset int32) {
+	for j := i + 1; j < int32(len(d.dom.attributes)); j++ {
 		d.attributesStart[j] += currOffset
 	}
 }
 
-func (d *DOM) nextAttribute(offset int, selectors ...string) (newOffset int, index int) {
+func (d *DOM) nextAttribute(offset int32, selectors ...string) (newOffset int32, index int32) {
 	if len(selectors) <= 1 {
 		newOffset, index = d.matchAttributeByTag(offset, selectors)
 	} else {
@@ -97,11 +98,11 @@ func (d *DOM) nextAttribute(offset int, selectors ...string) (newOffset int, ind
 	return newOffset, index
 }
 
-func (d *DOM) matchAttributeByTag(offset int, selectors []string) (int, int) {
+func (d *DOM) matchAttributeByTag(offset int32, selectors []string) (int32, int32) {
 	if offset == 0 {
 		offset = 1
 	}
-	for i := offset; i < len(d.dom.attributes); i++ {
+	for i := offset; i < int32(len(d.dom.attributes)); i++ {
 		if !d.matchTag(d.attribute(i).tag, selectors) {
 			continue
 		}
@@ -110,16 +111,16 @@ func (d *DOM) matchAttributeByTag(offset int, selectors []string) (int, int) {
 	return -1, -1
 }
 
-func (d *DOM) attributeByIndex(i int) []byte {
+func (d *DOM) attributeByIndex(i int32) []byte {
 	return d.attributeValue(i)
 }
 
-//innerHTMLByIndex returns innerHTML of n-th tag
-func (d *DOM) innerHTMLByIndex(tagIndex int) []byte {
+// innerHTMLByIndex returns innerHTML of n-th tag
+func (d *DOM) innerHTMLByIndex(tagIndex int32) []byte {
 	return d.buffer.slice(d.tag(tagIndex).innerHTML, d.tagOffset(tagIndex), d.tagOffset(tagIndex))
 }
 
-func (d *DOM) nextMatchingTag(offset int, selectors []string) (int, int) {
+func (d *DOM) nextMatchingTag(offset int32, selectors []string) (int32, int32) {
 	if len(selectors) == 0 {
 		i := d.findFirstTag(offset)
 		return i, i
@@ -127,12 +128,12 @@ func (d *DOM) nextMatchingTag(offset int, selectors []string) (int, int) {
 	}
 
 	groupIndex := d.dom.index.tagIndex(selectors[0], false)
-	if groupIndex == -1 || len(d.dom.tagsGrouped[groupIndex]) <= offset {
+	if groupIndex == -1 || int32(len(d.dom.tagsGrouped[groupIndex])) <= offset {
 		return -1, -1
 	}
 
 	tagIndex := d.dom.tagsGrouped[groupIndex][offset]
-	for i := tagIndex; i < len(d.dom.tags); i++ {
+	for i := tagIndex; i < int32(len(d.dom.tags)); i++ {
 		if d.tagsRemoved[i] {
 			continue
 		}
@@ -156,8 +157,8 @@ func (d *DOM) nextMatchingTag(offset int, selectors []string) (int, int) {
 	return -1, -1
 }
 
-func (d *DOM) findFirstTag(offset int) int {
-	for i := offset + 1; i < len(d.dom.tags); i++ {
+func (d *DOM) findFirstTag(offset int32) int32 {
+	for i := offset + 1; i < int32(len(d.dom.tags)); i++ {
 		if d.tagsRemoved[i] {
 			continue
 		}
@@ -167,7 +168,7 @@ func (d *DOM) findFirstTag(offset int) int {
 	return -1
 }
 
-func (d *DOM) matchTag(i int, selectors []string) bool {
+func (d *DOM) matchTag(i int32, selectors []string) bool {
 	if d.tagsRemoved[i] {
 		return false
 	}
@@ -178,45 +179,45 @@ func (d *DOM) matchTag(i int, selectors []string) bool {
 	)
 }
 
-//Render returns template after VirtualDOM changes
+// Render returns template after VirtualDOM changes
 func (d *DOM) Render() string {
 	return string(d.buffer.bytes())
 }
 
-func (d *DOM) tag(i int) *tag {
+func (d *DOM) tag(i int32) *tag {
 	return d.dom.tags[i]
 }
 
-func (d *DOM) offsetDiff(i int) int {
+func (d *DOM) offsetDiff(i int32) int32 {
 	return d.attributesStart[i] - d.attributesStart[i-1]
 }
 
-func (d *DOM) attrByIndex(i int) *attr {
+func (d *DOM) attrByIndex(i int32) *attr {
 	return d.dom.attributes[i]
 }
 
-func (d *DOM) attrOffset(i int) int {
+func (d *DOM) attrOffset(i int32) int32 {
 	return d.attributesStart[i]
 }
 
-func (d *DOM) tagOffset(i int) int {
+func (d *DOM) tagOffset(i int32) int32 {
 	return d.dom.tags.tagOffset(i, d.attributesStart)
 }
 
-func (d *DOM) setInnerHTMLByIndex(tagIndex int, value []byte) error {
+func (d *DOM) setInnerHTMLByIndex(tagIndex int32, value []byte) error {
 	if err := d.updateInnerHTML(tagIndex, value); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (d *DOM) updateInnerHTML(tagIndex int, newInnerHTML []byte) error {
+func (d *DOM) updateInnerHTML(tagIndex int32, newInnerHTML []byte) error {
 	diff := d.buffer.replaceBytes(d.tag(tagIndex).innerHTML, d.tagOffset(tagIndex), d.innerHTMLSize[tagIndex], newInnerHTML)
-	for i := d.tag(tagIndex).attrEnd; i < len(d.attributesStart); i++ {
+	for i := d.tag(tagIndex).attrEnd; i < int32(len(d.attributesStart)); i++ {
 		d.attributesStart[i] += diff
 	}
 
-	for i := tagIndex + 1; i < len(d.tagsRemoved); i++ {
+	for i := tagIndex + 1; i < int32(len(d.tagsRemoved)); i++ {
 		if d.tag(tagIndex).depth <= d.tag(i).depth {
 			break
 		}
@@ -227,7 +228,7 @@ func (d *DOM) updateInnerHTML(tagIndex int, newInnerHTML []byte) error {
 	return nil
 }
 
-func (d *DOM) matchAttributeName(i int, selectors []string) bool {
+func (d *DOM) matchAttributeName(i int32, selectors []string) bool {
 	if len(selectors) <= 1 {
 		return true
 	}
@@ -238,7 +239,7 @@ func (d *DOM) matchAttributeName(i int, selectors []string) bool {
 	)
 }
 
-func (d *DOM) matchAttributeValue(i int, selectors []string) bool {
+func (d *DOM) matchAttributeValue(i int32, selectors []string) bool {
 	if len(selectors) < 3 {
 		return true
 	}
@@ -250,11 +251,11 @@ func (d *DOM) matchAttributeValue(i int, selectors []string) bool {
 	)
 }
 
-func (d *DOM) attributeKey(index int) []byte {
+func (d *DOM) attributeKey(index int32) []byte {
 	return d.buffer.slice(d.attribute(index).boundaries[0], d.attrOffset(index-1), d.attrOffset(index-1))
 }
 
-func (d *DOM) attributeValue(i int) []byte {
+func (d *DOM) attributeValue(i int32) []byte {
 	return d.buffer.buffer[d.attribute(i).valueStart()+d.attributesStart[i-1] : d.attribute(i).valueEnd()+d.attributesStart[i]]
 }
 
@@ -267,21 +268,21 @@ func (d *DOM) apply(options []option.Option) {
 	}
 }
 
-func (d *DOM) tagLen() int {
-	return len(d.dom.tags)
+func (d *DOM) tagLen() int32 {
+	return int32(len(d.dom.tags))
 }
 
-func (d *DOM) tagAttributes(i int) attrs {
+func (d *DOM) tagAttributes(i int32) attrs {
 	return d.dom.attributes[d.tag(i-1).attrEnd:d.tag(i).attrEnd]
 }
 
-func (d *DOM) matchAttributeByAttributeName(offset int, selectors []string) (int, int) {
+func (d *DOM) matchAttributeByAttributeName(offset int32, selectors []string) (int32, int32) {
 	groupIndex := d.dom.attributeIndex(selectors[1], false)
 	if groupIndex == -1 {
 		return -1, -1
 	}
 
-	for i := offset; i < len(d.dom.attributesGrouped[groupIndex]); i++ {
+	for i := offset; i < int32(len(d.dom.attributesGrouped[groupIndex])); i++ {
 		attrIndex := d.dom.attributesGrouped[groupIndex][i]
 		if !d.matchTag(d.attribute(attrIndex).tag, selectors) {
 			continue
@@ -296,7 +297,7 @@ func (d *DOM) matchAttributeByAttributeName(offset int, selectors []string) (int
 	return -1, -1
 }
 
-func (d *DOM) addAttribute(tagIndex int, key string, value string) {
+func (d *DOM) addAttribute(tagIndex int32, key string, value string) {
 	// adding to the buffer: ` key="value"`
 	newAttribute := make([]byte, len(key)+len(value)+4)
 	newAttribute[0] = ' '
@@ -309,7 +310,7 @@ func (d *DOM) addAttribute(tagIndex int, key string, value string) {
 	end := d.tag(tagIndex).attrEnd - 1
 	d.buffer.insertAfter(d.attribute(end).valueEnd()+1, d.attrOffset(end), newAttribute)
 
-	for i := end; i < len(d.dom.attributes); i++ {
-		d.attributesStart[i] += offset
+	for i := end; i < int32(len(d.dom.attributes)); i++ {
+		d.attributesStart[i] += int32(offset)
 	}
 }

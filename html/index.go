@@ -42,18 +42,18 @@ const (
 )
 
 type index struct {
-	attributes map[string]int
-	tags       map[string]int
+	attributes map[string]int32
+	tags       map[string]int32
 }
 
 func newIndex() *index {
 	return &index{
-		attributes: map[string]int{},
-		tags:       map[string]int{},
+		attributes: map[string]int32{},
+		tags:       map[string]int32{},
 	}
 }
 
-func (i *index) tagIndex(tag string, createIfAbsent bool) int {
+func (i *index) tagIndex(tag string, createIfAbsent bool) int32 {
 	switch tag {
 	case `html`:
 		return htmlTag
@@ -109,13 +109,13 @@ func (i *index) tagIndex(tag string, createIfAbsent bool) int {
 			return -1
 		}
 
-		tagIndex = len(i.tags) + lastTag
+		tagIndex = int32(len(i.tags) + lastTag)
 		i.tags[tag] = tagIndex
 		return tagIndex
 	}
 }
 
-func (i *index) attributeIndex(attribute string, createIfAbsent bool) int {
+func (i *index) attributeIndex(attribute string, createIfAbsent bool) int32 {
 	attribute = strings.ToLower(attribute)
 
 	switch attribute {
@@ -147,7 +147,7 @@ func (i *index) attributeIndex(attribute string, createIfAbsent bool) int {
 			return -1
 		}
 
-		attributeIndex = len(i.tags) + lastAttribute
+		attributeIndex = int32(len(i.tags)) + lastAttribute
 		i.attributes[attribute] = attributeIndex
 		return attributeIndex
 	}

@@ -2,11 +2,12 @@ package html
 
 import (
 	_ "embed"
-	"github.com/stretchr/testify/assert"
-	"github.com/viant/dm/option"
 	"strconv"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/viant/dm/option"
 )
 
 //go:embed testdata/template006/index.html
@@ -18,8 +19,8 @@ var poolExpected string
 func TestNewPool(t *testing.T) {
 	testcases := []struct {
 		description string
-		poolSize    int
-		bufferSize  int
+		poolSize    int32
+		bufferSize  int32
 	}{
 		{
 			description: "pool size 1",

@@ -88,4 +88,4 @@ Usage:
 
 ## Options
 Options supported:
-* `*Buffer` - you can reuse Buffers by passing one while creating the `DOM` using `VirutalDOM.DOM()` manually, or by using `Pool` created via `NewPool(size int, dom *VirtualDOM)`
+* `*Buffer` - you can reuse Buffers by passing one while creating the `DOM` using `VirutalDOM.DOM()` manually, or by using `Pool` created via `NewPool(size int32, dom *VirtualDOM)`

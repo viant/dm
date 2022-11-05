@@ -5,25 +5,25 @@ import "fmt"
 type (
 	iterator struct {
 		template  *DOM
-		current   int
-		next      int
+		current   int32
+		next      int32
 		selectors []string
 	}
 
 	//ElementIterator iterates over matching tags
 	ElementIterator struct {
 		iterator
-		index int
+		index int32
 	}
 
 	//AttributeIterator iterates over matching attributes
 	AttributeIterator struct {
 		iterator
-		index int
+		index int32
 	}
 )
 
-//Has returns true if there are more tags matching given selectors
+// Has returns true if there are more tags matching given selectors
 func (it *ElementIterator) Has() bool {
 	if it.current < it.next {
 		return true
@@ -38,8 +38,8 @@ func (it *ElementIterator) Has() bool {
 	return it.next != -1
 }
 
-//Next returns Element matching given selectors
-//Note: it is needed to call Has before calling Next
+// Next returns Element matching given selectors
+// Note: it is needed to call Has before calling Next
 func (it *ElementIterator) Next() (*Element, error) {
 	if it.current == it.next {
 		return nil, fmt.Errorf("it is needed to call Has, before Next is called")
@@ -59,7 +59,7 @@ func (it *ElementIterator) Next() (*Element, error) {
 	}, nil
 }
 
-//Has returns true if there are more attributes matching given selectors
+// Has returns true if there are more attributes matching given selectors
 func (at *AttributeIterator) Has() bool {
 	if at.current < at.next {
 		return true
@@ -74,8 +74,8 @@ func (at *AttributeIterator) Has() bool {
 	return at.next != -1
 }
 
-//Next returns Attribute matching given selectors
-//Note: it is needed to call Has before calling Next
+// Next returns Attribute matching given selectors
+// Note: it is needed to call Has before calling Next
 func (at *AttributeIterator) Next() (*Attribute, error) {
 	if at.current == at.next {
 		return nil, fmt.Errorf("it is needed to call Has, before Next is called")

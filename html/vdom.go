@@ -2,16 +2,17 @@ package html
 
 import (
 	"bytes"
+	"io"
+
 	"github.com/viant/dm/option"
 	"golang.org/x/net/html"
-	"io"
 )
 
 type (
 	//VirtualDOM represents VirtualDOM structure
 	VirtualDOM struct {
 		template          []byte
-		initialBufferSize int
+		initialBufferSize int32
 		filter            *option.Filters
 		*builder
 	}
@@ -21,19 +22,19 @@ func (v *VirtualDOM) apply(options []option.Option) {
 	for _, opt := range options {
 		switch actual := opt.(type) {
 		case option.BufferSize:
-			v.initialBufferSize = int(actual)
+			v.initialBufferSize = int32(actual)
 		case *option.Filters:
 			v.filter = actual
 		}
 	}
 }
 
-//AttributesLen returns number of attributes. Attributes[0] is an empty attribute.
-func (v *VirtualDOM) AttributesLen() int {
-	return len(v.builder.attributes)
+// AttributesLen returns number of attributes. Attributes[0] is an empty attribute.
+func (v *VirtualDOM) AttributesLen() int32 {
+	return int32(len(v.builder.attributes))
 }
 
-//New parses template and creates new VirtualDOM. Filters can be specified to index some tags and attributes.
+// New parses template and creates new VirtualDOM. Filters can be specified to index some tags and attributes.
 func New(template string, options ...option.Option) (*VirtualDOM, error) {
 	domBuilder := newBuilder()
 	templateBytes := []byte(template)
@@ -77,7 +78,7 @@ outer:
 				}
 			}
 
-			v.builder.newTag(string(tagName), rawSpan(node).end, nodeSpan, html.SelfClosingTagToken == next)
+			v.builder.newTag(string(tagName), int32(rawSpan(node).end), nodeSpan, html.SelfClosingTagToken == next)
 			if v.filter == nil {
 				buildAllAttributes(template, node, v.builder)
 			} else {
@@ -91,7 +92,7 @@ outer:
 					continue outer
 				}
 			}
-			v.builder.closeTag(rawSpan(node).start)
+			v.builder.closeTag(int32(rawSpan(node).start))
 		}
 	}
 	return nil

@@ -5,13 +5,13 @@ type (
 	tag  struct {
 		innerHTML *span
 		tagName   *span
-		attrEnd   int
-		depth     int
-		index     int
+		attrEnd   int32
+		depth     int32
+		index     int32
 	}
 )
 
-func (t tags) tagOffset(index int, offsets []int) int {
+func (t tags) tagOffset(index int32, offsets []int32) int32 {
 	if t[index].attrEnd-1 < 0 {
 		return 0
 	}
