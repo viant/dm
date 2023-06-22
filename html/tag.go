@@ -27,17 +27,17 @@ func (t tags) tagOffset(index int, offsets []int) int {
 	return offsets[t[index].attrEnd-1]
 }
 
-func (t *tag) addAttribute(spans [2]span, index int) {
+func (t *tag) addAttribute(spans [2]span, index int, offset int) {
 	t.attrIndex[strings.ToLower(string(t.vdom.template[spans[0].start:spans[0].end]))] = len(t.attrs)
 	t.attrs = append(t.attrs, &attr{
 		boundaries: [2]*span{
 			{
-				start: spans[0].start,
-				end:   spans[0].end,
+				start: spans[0].start + offset,
+				end:   spans[0].end + offset,
 			},
 			{
-				start: spans[1].start,
-				end:   spans[1].end,
+				start: spans[1].start + offset,
+				end:   spans[1].end + offset,
 			},
 		},
 		index: index,

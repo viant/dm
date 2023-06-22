@@ -49,9 +49,17 @@ func New(template string, options ...option.Option) (*DOM, error) {
 
 func (d *DOM) buildTemplate(template []byte) error {
 	node := html.NewTokenizer(bytes.NewReader(template))
+	offset := 0
 outer:
 	for {
+		previousSpan := rawSpan(node)
 		next := node.Next()
+		nextSpan := rawSpan(node)
+
+		if nextSpan.start < previousSpan.end {
+			offset += previousSpan.end
+		}
+
 		switch next {
 		case html.ErrorToken:
 			err := node.Err()
@@ -74,11 +82,11 @@ outer:
 				}
 			}
 
-			d.builder.newTag(string(tagName), rawSpan(node).end, nodeSpan, html.SelfClosingTagToken == next)
+			d.builder.newTag(string(tagName), offset+nextSpan.end, nodeSpan, html.SelfClosingTagToken == next)
 			if d.filter == nil {
-				buildAllAttributes(template, node, d.builder)
+				buildAllAttributes(template, node, d.builder, offset)
 			} else {
-				buildFilteredAttributes(template, tagName, node, d.builder, d.filter)
+				buildFilteredAttributes(template, tagName, node, d.builder, d.filter, offset)
 			}
 		case html.EndTagToken:
 			tagName, _ := node.TagName()
@@ -87,22 +95,22 @@ outer:
 					continue outer
 				}
 			}
-			d.builder.closeTag(rawSpan(node).start, tagName)
+			d.builder.closeTag(nextSpan.start, tagName)
 		}
 	}
 	return nil
 }
 
-func buildAllAttributes(template []byte, z *html.Tokenizer, builder *builder) {
+func buildAllAttributes(template []byte, z *html.Tokenizer, builder *builder, withOffset int) {
 	attributes := attributesSpan(z)
-	replaceWithSingleQuote(template, attributes)
+	replaceWithSingleQuote(template, attributes, withOffset)
 
 	for _, attribute := range attributes {
-		builder.attribute(attribute)
+		builder.attribute(attribute, withOffset)
 	}
 }
 
-func replaceWithSingleQuote(template []byte, attributes [][2]span) {
+func replaceWithSingleQuote(template []byte, attributes [][2]span, withOffset int) {
 	for _, attribute := range attributes {
 		keyEnd := attribute[0].end
 		attrValue := attribute[1]
@@ -119,14 +127,14 @@ func replaceWithSingleQuote(template []byte, attributes [][2]span) {
 			continue
 		}
 
-		template[attrValue.start-1] = '"'
-		template[attrValue.end] = '"'
+		template[withOffset+attrValue.start-1] = '"'
+		template[withOffset+attrValue.end] = '"'
 	}
 }
 
-func buildFilteredAttributes(template []byte, tagName []byte, z *html.Tokenizer, builder *builder, tagFilter *option.Filters) {
+func buildFilteredAttributes(template []byte, tagName []byte, z *html.Tokenizer, builder *builder, tagFilter *option.Filters, withOffset int) {
 	attributes := attributesSpan(z)
-	replaceWithSingleQuote(template, attributes)
+	replaceWithSingleQuote(template, attributes, withOffset)
 
 	attributeFilter, ok := tagFilter.ElementFilter(string(tagName), false)
 	if !ok {
@@ -137,6 +145,6 @@ func buildFilteredAttributes(template []byte, tagName []byte, z *html.Tokenizer,
 		if ok := attributeFilter.Matches(string(template[attribute[0].start:attribute[0].end])); !ok {
 			continue
 		}
-		builder.attribute(attribute)
+		builder.attribute(attribute, withOffset)
 	}
 }

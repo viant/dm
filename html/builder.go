@@ -36,8 +36,8 @@ func newBuilder(vdom *DOM) *builder {
 	return builder
 }
 
-func (b *builder) attribute(spans [2]span) {
-	b.tags[len(b.tags)-1].addAttribute(spans, b.attributeCounter)
+func (b *builder) attribute(spans [2]span, offset int) {
+	b.tags[len(b.tags)-1].addAttribute(spans, b.attributeCounter, offset)
 	b.attributeCounter++
 }
 
