@@ -103,38 +103,14 @@ outer:
 
 func buildAllAttributes(template []byte, z *html.Tokenizer, builder *builder, withOffset int) {
 	attributes := attributesSpan(z)
-	replaceWithSingleQuote(template, attributes, withOffset)
 
 	for _, attribute := range attributes {
 		builder.attribute(attribute, withOffset)
 	}
 }
 
-func replaceWithSingleQuote(template []byte, attributes [][2]span, withOffset int) {
-	for _, attribute := range attributes {
-		keyEnd := attribute[0].end
-		attrValue := attribute[1]
-
-		var foundEqual bool
-		for ; keyEnd < attrValue.start; keyEnd++ {
-			if template[keyEnd] == '=' {
-				foundEqual = true
-				break
-			}
-		}
-
-		if !foundEqual {
-			continue
-		}
-
-		template[withOffset+attrValue.start-1] = '"'
-		template[withOffset+attrValue.end] = '"'
-	}
-}
-
 func buildFilteredAttributes(template []byte, tagName []byte, z *html.Tokenizer, builder *builder, tagFilter *option.Filters, withOffset int) {
 	attributes := attributesSpan(z)
-	replaceWithSingleQuote(template, attributes, withOffset)
 
 	attributeFilter, ok := tagFilter.ElementFilter(string(tagName), false)
 	if !ok {
